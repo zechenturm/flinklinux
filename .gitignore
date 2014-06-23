@@ -1,0 +1,10 @@
+build*/
+*.kdev4
+*.o
+*.ko
+*.mod.c
+*.cmd
+Module.symvers
+modules.order
+.directory
+.tmp_versions/
