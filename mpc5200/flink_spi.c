@@ -20,6 +20,7 @@
 #include <linux/device.h>
 #include <asm/io.h>
 
+
 #include "../flink.h"
 #include "flink_spi.h"
 
@@ -38,7 +39,7 @@
 #define SPIDATADIR_OFFSET 0x10
 
 #define GPSPCR 0xF0000B00
-
+#define TIMEOUT_CYLES 10000000
 
 MODULE_AUTHOR("Marco Tinner <marco.tinner@ntb.ch>");
 MODULE_DESCRIPTION("fLink spi bus module for mpc5200");
@@ -50,12 +51,18 @@ static unsigned int dev_mem_length = 0x40;
 module_param(dev_mem_length, uint, 0444);
 MODULE_PARM_DESC(dev_mem_length, "Device memory length");
 
+static unsigned long spi_sclk_speed = 2000000;
+module_param(spi_sclk_speed, ulong, 0444);
+MODULE_PARM_DESC(dev_mem_length, "SPI sclk speed in Hz");
+
+
 // ############ Bus communication functions ############
 
 int transferData(struct flink_spi_data* spi_data,u32 readAddress,u32 writeAddress,u32 data){
     	u8 dataToSend[12];
 	u32 result = 0;
 	u32 i = 0;
+	u32 timeoutCount= 0;
 	dataToSend[0] = (u8) ((readAddress >> 24) & 0xff);
 	dataToSend[1] = (u8) ((readAddress >> 16) & 0xff);
 	dataToSend[2] = (u8) ((readAddress >> 8)  & 0xff);
@@ -70,8 +77,15 @@ int transferData(struct flink_spi_data* spi_data,u32 readAddress,u32 writeAddres
 	dataToSend[11] = (u8) (data & 0xff);
     	for(i = 0; i<sizeof(dataToSend); i++){
 	    	iowrite8(dataToSend[i],spi_data->base_ptr + SPIDATA_OFFSET);
-	    	while((ioread8(spi_data->base_ptr + SPIST_OFFSET)&0x80)==0x0){
-			udelay(100);
+				
+		timeoutCount= 0;
+	    	while((ioread8(spi_data->base_ptr + SPIST_OFFSET)&0x80)==0x0 && timeoutCount < TIMEOUT_CYLES){
+			timeoutCount++;
+		}
+		udelay(2); //if this delay is removed the method blocks maybe caused by concurrent access to the SPIST register.
+		if (timeoutCount >= TIMEOUT_CYLES){
+			printk(KERN_ALERT "[%s] Timeout during SPI Transfer", MODULE_NAME);
+			return 0;		
 		}
 	    	dataToSend[i] = ioread8(spi_data->base_ptr + SPIDATA_OFFSET);
     	}
@@ -135,6 +149,42 @@ u32 lpb_address_space_size(struct flink_device* fdev) {
 	struct flink_spi_data* spi_data = (struct flink_spi_data*)fdev->bus_data;
 	return (u32)(spi_data->mem_size);
 }
+
+
+
+//method not working for a value of 0
+
+u32 pseudo_log2(u32 value){
+	int i = 0;
+	int temp = 1;
+	while(temp < value){
+		i++;
+		temp=temp*2;
+	}
+	return i;
+
+}
+
+
+//calculates the  SPI baude rate register out of the chosen speed. Allways rounds down. 
+u8 speedToRegValue(unsigned long speed){
+	u8 regNumber = 0;
+	u8 regValue = 0;
+	if(speed > 16500000){
+		speed = 16500000;
+	}
+	if(33000000/speed < 256){
+		regNumber = pseudo_log2(33000000/speed)-1;
+	}else{
+		regNumber = (pseudo_log2(33000000/speed-256)-1)|0x38;
+	}
+	regValue = regValue |(regNumber & 0x7); //set the last 3 bits;
+	regNumber = regNumber & 0x38; //clear all bits expect of 3,4,5
+	regNumber = regNumber << 1; //shift one to left to have bits 3,4,5 in the right position see reg definition to understand why this step is neccessary. 
+	regValue = regValue | regNumber;
+	return regValue;
+}
+
 
 struct flink_bus_ops lpb_bus_ops = {
 	.read8              = lpb_read8,
@@ -213,8 +263,13 @@ static int __init flink_spi_init(void) {
 		goto iomap_mem_region_SPI_fail;
 	}
 	iowrite8(0x56,spi_data->base_ptr + SPICR1_OFFSET);//SPI Enable, SPI Master set, CPOL = 0, CPHA = 1, CS enable
-	iowrite8(0x56,spi_data->base_ptr + SPICR2_OFFSET);
-	iowrite8(0x74,spi_data->base_ptr + SPIBDRATE_OFFSET);
+	iowrite8(0x00,spi_data->base_ptr + SPICR2_OFFSET);
+	iowrite8(speedToRegValue(spi_sclk_speed),spi_data->base_ptr + SPIBDRATE_OFFSET); 
+	#if defined(DBG)
+		printk(KERN_DEBUG "[%s] Baude Rate register set to: 0x%x", MODULE_NAME,speedToRegValue(spi_sclk_speed));
+	#endif	
+
+
 	iowrite8(0xE,spi_data->base_ptr + SPIDATADIR_OFFSET); // enable CS
 	ioread8(spi_data->base_ptr + SPIST_OFFSET); // clear status register
 
