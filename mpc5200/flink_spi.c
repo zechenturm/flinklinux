@@ -53,12 +53,12 @@ MODULE_PARM_DESC(dev_mem_length, "Device memory length");
 
 static unsigned long spi_sclk_speed = 2000000;
 module_param(spi_sclk_speed, ulong, 0444);
-MODULE_PARM_DESC(dev_mem_length, "SPI sclk speed in Hz");
+MODULE_PARM_DESC(dev_mem_length, "SPI sclk speed in Hz only values 33Mhz/2, 33Mhz/4, ... , 33/Mhz/2048 are allowed");
 
 
 // ############ Bus communication functions ############
 
-int transferData(struct flink_spi_data* spi_data,u32 readAddress,u32 writeAddress,u32 data){
+static int transferData(struct flink_spi_data* spi_data,u32 readAddress,u32 writeAddress,u32 data){
     	u8 dataToSend[12];
 	u32 result = 0;
 	u32 i = 0;
@@ -96,7 +96,7 @@ int transferData(struct flink_spi_data* spi_data,u32 readAddress,u32 writeAddres
 	return result;
 }
 
-u8 lpb_read8(struct flink_device* fdev, u32 addr) {
+static u8 spi_read8(struct flink_device* fdev, u32 addr) {
 	struct flink_spi_data* spi_data = (struct flink_spi_data*)fdev->bus_data;
 	if(spi_data != NULL) {
 		return transferData(spi_data,addr,0,0);
@@ -104,7 +104,7 @@ u8 lpb_read8(struct flink_device* fdev, u32 addr) {
 	return 0;
 }
 
-u16 lpb_read16(struct flink_device* fdev, u32 addr) {
+static u16 spi_read16(struct flink_device* fdev, u32 addr) {
 	struct flink_spi_data* spi_data = (struct flink_spi_data*)fdev->bus_data;
 	if(spi_data != NULL) {
 		return transferData(spi_data,addr,0,0);
@@ -112,7 +112,7 @@ u16 lpb_read16(struct flink_device* fdev, u32 addr) {
 	return 0;
 }
 
-u32 lpb_read32(struct flink_device* fdev, u32 addr){
+static u32 spi_read32(struct flink_device* fdev, u32 addr){
 	struct flink_spi_data* spi_data = (struct flink_spi_data*)fdev->bus_data;
 	if(spi_data != NULL) {
 		return transferData(spi_data,addr,0,0);
@@ -120,7 +120,7 @@ u32 lpb_read32(struct flink_device* fdev, u32 addr){
 	return 0;
 }
 
-int lpb_write8(struct flink_device* fdev, u32 addr, u8 val) {
+int spi_write8(struct flink_device* fdev, u32 addr, u8 val) {
 	struct flink_spi_data* spi_data = (struct flink_spi_data*)fdev->bus_data;
 	if(spi_data != NULL) {
 		transferData(spi_data,0,addr,val);
@@ -128,7 +128,7 @@ int lpb_write8(struct flink_device* fdev, u32 addr, u8 val) {
 	return 0;
 }
 
-int lpb_write16(struct flink_device* fdev, u32 addr, u16 val) {
+static int spi_write16(struct flink_device* fdev, u32 addr, u16 val) {
 	struct flink_spi_data* spi_data = (struct flink_spi_data*)fdev->bus_data;
 	if(spi_data != NULL) {
 		transferData(spi_data,0,addr,val);
@@ -136,7 +136,7 @@ int lpb_write16(struct flink_device* fdev, u32 addr, u16 val) {
 	return 0;
 }
 
-int lpb_write32(struct flink_device* fdev, u32 addr, u32 val) {
+static int spi_write32(struct flink_device* fdev, u32 addr, u32 val) {
 	
 	struct flink_spi_data* spi_data = (struct flink_spi_data*)fdev->bus_data;
 	if(spi_data != NULL) {
@@ -145,7 +145,7 @@ int lpb_write32(struct flink_device* fdev, u32 addr, u32 val) {
 	return 0;
 }
 
-u32 lpb_address_space_size(struct flink_device* fdev) {
+static u32 spi_address_space_size(struct flink_device* fdev) {
 	struct flink_spi_data* spi_data = (struct flink_spi_data*)fdev->bus_data;
 	return (u32)(spi_data->mem_size);
 }
@@ -154,7 +154,7 @@ u32 lpb_address_space_size(struct flink_device* fdev) {
 
 //method not working for a value of 0
 
-u32 pseudo_log2(u32 value){
+static u32 pseudo_log2(u32 value){
 	int i = 0;
 	int temp = 1;
 	while(temp < value){
@@ -167,9 +167,10 @@ u32 pseudo_log2(u32 value){
 
 
 //calculates the  SPI baude rate register out of the chosen speed. Allways rounds down. 
-u8 speedToRegValue(unsigned long speed){
+static u8 speedToRegValue(unsigned long speed){
 	u8 regNumber = 0;
 	u8 regValue = 0;
+	//TODO get system clock from system.
 	if(speed > 16500000){
 		speed = 16500000;
 	}
@@ -186,14 +187,14 @@ u8 speedToRegValue(unsigned long speed){
 }
 
 
-struct flink_bus_ops lpb_bus_ops = {
-	.read8              = lpb_read8,
-	.read16             = lpb_read16,
-	.read32             = lpb_read32,
-	.write8             = lpb_write8,
-	.write16            = lpb_write16,
-	.write32            = lpb_write32,
-	.address_space_size = lpb_address_space_size
+static struct flink_bus_ops spi_bus_ops = {
+	.read8              = spi_read8,
+	.read16             = spi_read16,
+	.read32             = spi_read32,
+	.write8             = spi_write8,
+	.write16            = spi_write16,
+	.write32            = spi_write32,
+	.address_space_size = spi_address_space_size
 };
 
 // ############ Initialization and cleanup ############
@@ -244,7 +245,7 @@ static int __init flink_spi_init(void) {
 		goto iomap_mem_region_GPSPCR_fail;
 	}		
 	if(spi_data == NULL){
-		printk(KERN_ALERT "[%s] ERROR: Memory alloc for lpb data failed!", MODULE_NAME);
+		printk(KERN_ALERT "[%s] ERROR: Memory alloc for spi data failed!", MODULE_NAME);
 		goto mem_alloc_fail;
 	}
 
@@ -274,7 +275,7 @@ static int __init flink_spi_init(void) {
 	ioread8(spi_data->base_ptr + SPIST_OFFSET); // clear status register
 
 
-	flink_device_init(fdev, &lpb_bus_ops, THIS_MODULE);
+	flink_device_init(fdev, &spi_bus_ops, THIS_MODULE);
 	fdev->bus_data = spi_data;
 	flink_device_add(fdev);
 	
