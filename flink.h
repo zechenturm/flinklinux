@@ -6,7 +6,7 @@
 #include <linux/list.h>
 #include <linux/fs.h>
 
-// ############ Flink error numbers ############
+// ############ flink error numbers ############
 #define UNKOWN_ERROR -1
 
 // FPGA module interface types
@@ -15,13 +15,13 @@ extern const char* fmit_lkm_lut[];
 // ############ Forward declarations ############
 struct flink_device;
 
-// ############ Flink private data ############
+// ############ flink private data ############
 struct flink_private_data {
 	struct flink_device*    fdev;
 	struct flink_subdevice* current_subdevice;
 };
 
-// ############ Flink bus operations ############
+// ############ flink bus operations ############
 struct flink_bus_ops {
 	u8  (*read8)(struct flink_device*, u32 addr);
 	u16 (*read16)(struct flink_device*, u32 addr);
@@ -32,7 +32,7 @@ struct flink_bus_ops {
 	u32 (*address_space_size)(struct flink_device*);
 };
 
-// ############ Flink subdevice ############
+// ############ flink subdevice ############
 #define MAX_NOF_SUBDEVICES 256
 
 struct flink_subdevice {
@@ -47,7 +47,7 @@ struct flink_subdevice {
 	u32                  nof_channels;
 };
 
-// ############ Flink device ############
+// ############ flink device ############
 struct flink_device {
 	struct list_head      list;
 	u8                    id;
@@ -86,11 +86,11 @@ extern int                     flink_select_subdevice(struct file* f, u8 subdevi
 // Memory addresses and offsets
 #define MAIN_HEADER_SIZE			16		// byte
 #define SUB_HEADER_SIZE				16		// byte
-#define SUBDEV_TYPE_OFFSET			0x0000	//byte
-#define SUBDEV_SIZE_OFFSET			0x0004	//byte
-#define SUBDEV_NOFCHANNELS_OFFSET	0x0008	//byte
-#define SUBDEV_STATUS_OFFSET		0x0010	//byte
-#define SUBDEV_CONFIG_OFFSET		0x0014	//byte
+#define SUBDEV_TYPE_OFFSET			0x0000	// byte
+#define SUBDEV_SIZE_OFFSET			0x0004	// byte
+#define SUBDEV_NOFCHANNELS_OFFSET	0x0008	// byte
+#define SUBDEV_STATUS_OFFSET		0x0010	// byte
+#define SUBDEV_CONFIG_OFFSET		0x0014	// byte
 
 // Types
 #define UNKNOWN_TYPE_ID				0x00
@@ -114,6 +114,7 @@ struct ioctl_bit_container_t {
 	uint8_t  value;
 };
 
-#define FLINKLIB_SUBDEVICE_SIZE		17		// byte
+// size of struct 'flink_subdevice' without linked list information (in bytes)
+#define FLINKLIB_SUBDEVICE_SIZE		(sizeof(struct flink_subdevice)-offsetof(struct flink_subdevice,id))
 
 #endif /* FLINK_H_ */

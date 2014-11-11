@@ -232,6 +232,7 @@ long flink_ioctl(struct file* f, unsigned int cmd, unsigned long arg) {
 				#endif
 				return -EINVAL;
 			}
+			printk(KERN_DEBUG "  -> size of copy to userspace: %i", FLINKLIB_SUBDEVICE_SIZE);
 			error = copy_to_user((void __user *)arg, &(src->id), FLINKLIB_SUBDEVICE_SIZE);
 			if(error != 0) {
 				#if defined(DBG)
@@ -580,10 +581,10 @@ int flink_device_remove(struct flink_device* fdev) {
 }
 
 /**
- * flink_device_delete() - delets a flink device
+ * flink_device_delete() - deletes a flink device
  * @fdev: the flink_device structure to delete
  *
- * flink_device_delete() delets the device represented by @fdev and
+ * flink_device_delete() deletes the device represented by @fdev and
  * frees the allocated memory. All subdevices will be deleted,
  * using flink_subdevice_remove() and flink_subdevice_delete. A
  * negative error code is returned on failure.
@@ -759,10 +760,10 @@ int flink_subdevice_remove(struct flink_subdevice* fsubdev) {
 }
 
 /**
- * flink_subdevice_delete() - delets a flink subdevice
+ * flink_subdevice_delete() - deletes a flink subdevice
  * @fsubdev: the flink_subdevice structure to delete
  *
- * flink_subdevice_delete() delets the subdevice represented by 
+ * flink_subdevice_delete() deletes the subdevice represented by
  * @fsubdev and frees the allocated memory. A negative error
  * code is returned on failure.
  */
