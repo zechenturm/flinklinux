@@ -23,7 +23,7 @@
 
 #include "flink.h"
 
-#define DBG 1
+#define DBG 0
 #define MODULE_NAME THIS_MODULE->name
 #define SYSFS_CLASS_NAME "flink"
 #define MAX_DEV_NAME_LENGTH 15
@@ -232,7 +232,6 @@ long flink_ioctl(struct file* f, unsigned int cmd, unsigned long arg) {
 				#endif
 				return -EINVAL;
 			}
-			printk(KERN_DEBUG "  -> size of copy to userspace: %i", FLINKLIB_SUBDEVICE_SIZE);
 			error = copy_to_user((void __user *)arg, &(src->id), FLINKLIB_SUBDEVICE_SIZE);
 			if(error != 0) {
 				#if defined(DBG)
@@ -388,7 +387,6 @@ module_exit(flink_exit);
 static int create_device_node(struct flink_device* fdev) {
 	static unsigned int dev_counter = 0;
 	int error = 0;
-//	char dev_name[MAX_DEV_NAME_LENGTH + 1];
 	dev_t dev;
 	
 	// Allocate, register and initialize char device
@@ -411,7 +409,6 @@ static int create_device_node(struct flink_device* fdev) {
 	}
 	
 	// create device node
-//	sprintf(dev_name, "flink%u", dev_counter);
 	fdev->sysfs_device = device_create(sysfs_class, NULL, dev, NULL, "flink%u", dev_counter);
 	if(IS_ERR(fdev->sysfs_device)) {
 		printk(KERN_ERR "[%s] Creation of sysfs device failed!", MODULE_NAME);
@@ -422,7 +419,6 @@ static int create_device_node(struct flink_device* fdev) {
 		printk(KERN_DEBUG "[%s] Device node created: flink%u", MODULE_NAME, dev_counter);
 	#endif
 	
-	// increment pwm device counter
 	dev_counter++;
 	
 	return 0;
@@ -706,7 +702,7 @@ void flink_subdevice_init(struct flink_subdevice* fsubdev) {
  * @fsubdev: the flink_subdevice structure
  *
  * flink_subdevice_add() adds the subdevice represented by @fsubdev
- * to the parent flink device @fdev and makeing it available to use.
+ * to the parent flink device @fdev and making it available to use.
  * A negative error code is returned on failure.
  */
 int flink_subdevice_add(struct flink_device* fdev, struct flink_subdevice* fsubdev) {
