@@ -7,4 +7,4 @@ This documentation is intended for developers to understand the internals of the
 
 ## Documentation
 - [Overview](doc/overview.md)
-- ![API](../doc/html/index.html)
+- ![API](./doc/html/index.html)
