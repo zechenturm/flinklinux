@@ -17,6 +17,38 @@ struct flink_device {
 	struct device*        sysfs_device;
 };
 ```
+All flink devices which are present in a system will be inserted in a linked list.
 
-<img src="../doc/images/ExampleDataStructures.png" width="500px" />
+A flink device will contain one or several subdevices. Those subdevices are represented by the structure `flink_subdevice`. 
+```
+// ############ flink subdevice ############
+struct flink_subdevice {
+	struct list_head     list;
+	struct flink_device* parent;
+	u8                   id;
+	u16                  type_id;
+	u8                   sub_type_id;
+	u8                   if_version;
+	u32                  base_addr;
+	u32                  mem_size;
+	u32                  nof_channels;
+};
+```
+The following picture shows an example of a system with two flink devices, each containing two subdevices.
+<img src="../doc/images/ExampleDataStructures.png" width="600px" />
 
+Obviously, a flink device must communicate with a given set of operations over its interface. However, we do not want to introduce any hardware dependency into `flink_core.c`. For this purpose we define a structure `flink_bus_ops`.
+```
+// ############ flink bus operations ############
+struct flink_bus_ops {
+	u8  (*read8)(struct flink_device*, u32 addr);
+	u16 (*read16)(struct flink_device*, u32 addr);
+	u32 (*read32)(struct flink_device*, u32 addr);
+	int (*write8)(struct flink_device*, u32 addr, u8 val);
+	int (*write16)(struct flink_device*, u32 addr, u16 val);
+	int (*write32)(struct flink_device*, u32 addr, u32 val);
+	u32 (*address_space_size)(struct flink_device*);
+};
+```
+This bus operations will later point to interface dependent functions.
+Several functions to manage devices and subdevices are exported for use in other kernel modules. The API can be found in [API](../API)
