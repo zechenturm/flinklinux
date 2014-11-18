@@ -12,6 +12,16 @@
  *                                                                 *
  *******************************************************************/
 
+/** @file flink_core.c
+ *  @brief Core module for flink. 
+ * 
+ *  Contains functions to initialize, add and remove flink devices 
+ *  and subdevices 
+ *
+ *  @author Martin Züger
+ *  @author Urs Graf
+ */
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -67,27 +77,49 @@ ssize_t flink_read(struct file* f, char __user* data, size_t size, loff_t* offse
 	if(pdata != NULL && pdata->current_subdevice != NULL) {
 		struct flink_subdevice* subdev = pdata->current_subdevice;
 		struct flink_device* fdev = subdev->parent;
-		u32 rdata = 0;
-		u32 roffset = 0;
 		unsigned long rsize = 0;
+		u32 roffset = (u32)*offset;;
 		#if defined(DBG)
 			printk(KERN_DEBUG "  -> Device: %u/%u", fdev->id, subdev->id);
-			printk(KERN_DEBUG "  -> Size:   0x%x (%u bytes)", size, size);
+			printk(KERN_DEBUG "  -> Size:   0x%x (%u bytes)", (unsigned int)size, (unsigned int)size);
 			printk(KERN_DEBUG "  -> Offset: 0x%x", (u32)*offset);
 		#endif
+		if(roffset > subdev->mem_size) {
+			return 0;
+		}
 		switch(size) {
-			case 1:
-				// TODO
-				return 0;
-			case 2:
-				// TODO
-				return 0;
-			case 4:
-				rdata = 0;
-				roffset = (u32)*offset;
-				if(roffset > subdev->mem_size) {
+			case 1: {
+				u8 rdata = 0;
+				rdata = fdev->bus_ops->read8(fdev, subdev->base_addr + roffset);
+				rsize = copy_to_user(data, &rdata, sizeof(rdata));
+				if(rsize > 0) {
+					#if defined(DBG)
+						printk(KERN_DEBUG "  -> Copying to user space failed: %lu bytes not copied!", rsize);
+					#endif
 					return 0;
 				}
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Value:  0x%x", rdata);
+				#endif
+				return sizeof(rdata);
+			}
+			case 2: {
+				u16 rdata = 0;
+				rdata = fdev->bus_ops->read16(fdev, subdev->base_addr + roffset);
+				rsize = copy_to_user(data, &rdata, sizeof(rdata));
+				if(rsize > 0) {
+					#if defined(DBG)
+						printk(KERN_DEBUG "  -> Copying to user space failed: %lu bytes not copied!", rsize);
+					#endif
+					return 0;
+				}
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Value:  0x%x", rdata);
+				#endif
+				return sizeof(rdata);
+			}
+			case 4: {
+				u32 rdata = 0;
 				rdata = fdev->bus_ops->read32(fdev, subdev->base_addr + roffset);
 				rsize = copy_to_user(data, &rdata, sizeof(rdata));
 				if(rsize > 0) {
@@ -100,10 +132,11 @@ ssize_t flink_read(struct file* f, char __user* data, size_t size, loff_t* offse
 					printk(KERN_DEBUG "  -> Value:  0x%x", rdata);
 				#endif
 				return sizeof(rdata);
+			}
 			default:
-				if(size % 4 == 0) {
-					// TODO
-				}
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Size of transfer not supported: %lu bytes!", (long unsigned int)size);
+				#endif
 				return 0;
 		}
 	}
@@ -118,26 +151,49 @@ ssize_t flink_write(struct file* f, const char __user* data, size_t size, loff_t
 	if(pdata != NULL && pdata->current_subdevice != NULL) {
 		struct flink_subdevice* subdev = pdata->current_subdevice;
 		struct flink_device* fdev = subdev->parent;
-		u32 wdata = 0;
-		u32 woffset = 0;
+		u32 woffset = (u32)*offset;
 		unsigned long wsize = 0;
 		#if defined(DBG)
 			printk(KERN_DEBUG "  -> Device: %u/%u", fdev->id, subdev->id);
-			printk(KERN_DEBUG "  -> Size:   0x%x (%u bytes)", size, size);
+			printk(KERN_DEBUG "  -> Size:   0x%x (%u bytes)", (unsigned int)size, (unsigned int)size);
 			printk(KERN_DEBUG "  -> Offset: 0x%x", (u32)*offset);
 		#endif
+		if(woffset > subdev->mem_size) {
+			return 0;
+		}
 		switch(size) {
-			case 1:
-				// TODO
-				return 0;
-			case 2:
-				// TODO
-				return 0;
-			case 4:
-				woffset = (u32)*offset;
-				if(woffset > subdev->mem_size) {
+			case 1: {
+			  	u8 wdata = 0;
+				wsize = copy_from_user(&wdata, data, sizeof(wdata));
+				if(wsize > 0) {
+					#if defined(DBG)
+						printk(KERN_DEBUG "  -> Copying from user space failed: %lu bytes not copied!", wsize);
+					#endif
 					return 0;
 				}
+				fdev->bus_ops->write8(fdev, subdev->base_addr + woffset, wdata);
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Value:  0x%x", wdata);
+				#endif
+				return sizeof(wdata);
+			}
+			case 2: {
+			  	u16 wdata = 0;
+				wsize = copy_from_user(&wdata, data, sizeof(wdata));
+				if(wsize > 0) {
+					#if defined(DBG)
+						printk(KERN_DEBUG "  -> Copying from user space failed: %lu bytes not copied!", wsize);
+					#endif
+					return 0;
+				}
+				fdev->bus_ops->write16(fdev, subdev->base_addr + woffset, wdata);
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Value:  0x%x", wdata);
+				#endif
+				return sizeof(wdata);
+			}
+			case 4: {
+			  	u32 wdata = 0;
 				wsize = copy_from_user(&wdata, data, sizeof(wdata));
 				if(wsize > 0) {
 					#if defined(DBG)
@@ -150,10 +206,11 @@ ssize_t flink_write(struct file* f, const char __user* data, size_t size, loff_t
 					printk(KERN_DEBUG "  -> Value:  0x%x", wdata);
 				#endif
 				return sizeof(wdata);
+			}
 			default:
-				if(size % 4 == 0) {
-					// TODO
-				}
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Size of transfer not supported: %lu bytes!", (long unsigned int)size);
+				#endif
 				return 0;
 		}
 	}
@@ -380,6 +437,12 @@ module_exit(flink_exit);
 
 // ############ Device and module handling functions ############
 
+/*******************************************************************
+ *                                                                 *
+ *  Internal (private) methods                                     *
+ *                                                                 *
+ *******************************************************************/
+
 /**
  * create_device_node() - creates a device node for a flink device
  * @fdev: the flink device to create a device node for
@@ -450,7 +513,7 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 	unsigned int subdevice_counter = 0;
 	u32 current_address = 0;
 	u32 last_address = current_address + fdev->bus_ops->address_space_size(fdev) - 1;
-	u32 current_type = 0;
+	u32 current_function = 0;
 	u32 current_mem_size = 0;
 	struct flink_subdevice* new_subdev;
 	
@@ -460,15 +523,15 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 		printk(KERN_DEBUG "  -> Last valid address: 0x%x", last_address);
 	#endif
 	while(current_address < last_address && subdevice_counter < MAX_NOF_SUBDEVICES) {
-		current_type = (fdev->bus_ops->read32(fdev, current_address + SUBDEV_TYPE_OFFSET));
+		current_function = (fdev->bus_ops->read32(fdev, current_address + SUBDEV_TYPE_OFFSET));
 		current_mem_size = fdev->bus_ops->read32(fdev, current_address + SUBDEV_SIZE_OFFSET);
 		if(current_mem_size > MAIN_HEADER_SIZE + SUB_HEADER_SIZE) {
 			// Create and initialize new subdevice
 			new_subdev = flink_subdevice_alloc();
 			flink_subdevice_init(new_subdev);
-			new_subdev->type_id = (u16)(current_type >> 16);
-			new_subdev->sub_type_id = (u8)((current_type >> 8) & 0xFF);
-			new_subdev->if_version = (u8)(current_type & 0xFF);
+			new_subdev->function_id = (u16)(current_function >> 16);
+			new_subdev->sub_function_id = (u8)((current_function >> 8) & 0xFF);
+			new_subdev->function_version = (u8)(current_function & 0xFF);
 			new_subdev->base_addr = current_address;
 			new_subdev->mem_size = current_mem_size;
 			new_subdev->nof_channels = fdev->bus_ops->read32(fdev, current_address + SUBDEV_NOFCHANNELS_OFFSET);
@@ -479,7 +542,7 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 			
 			// Increment Address counter and reset temp variables
 			current_address += current_mem_size;
-			current_type = 0;
+			current_function = 0;
 			current_mem_size = 0;
 		}
 		else {
@@ -490,9 +553,8 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 }
 
 /**
- * flink_device_alloc() - allocate a flink_device structure
- *
- * Allocates and returns a flink_device structure, or NULL on failure.
+ * @brief Allocate a flink_device structure.
+ * @return flink_device*: Pointer to the new flink_device structure, or NULL on failure.
  */
 struct flink_device* flink_device_alloc(void) {
 	struct flink_device* fdev = kmalloc(sizeof(struct flink_device), GFP_KERNEL);
@@ -503,12 +565,11 @@ struct flink_device* flink_device_alloc(void) {
 }
 
 /**
- * flink_device_init() - initialize a flink_device structure
- * @fdev: the structure to initialize
- * @bops: the flink_bus_ops for this device
- *
- * Initializes @fdev, remembering @bops, making it ready to add to the
+ * @brief Initialize a flink_device structure
+ * @param fdev: The structure to initialize
+ * @param bus_ops: The flink_bus_ops for this device, remember them when adding them to
  * system with flink_device_add().
+ * @param mod: The kernel module this flink uses for hardware access.
  */
 void flink_device_init(struct flink_device* fdev, struct flink_bus_ops* bus_ops, struct module* mod) {
 	memset(fdev, 0, sizeof(*fdev));
@@ -519,11 +580,9 @@ void flink_device_init(struct flink_device* fdev, struct flink_bus_ops* bus_ops,
 }
 
 /**
- * flink_device_add() - add a flink device to the system
- * @fdev: the flink_device structure to register
- *
- * flink_device_add() adds the device represented by @fdev to the system, making it
- * live immediately. A negative error code is returned on failure.
+ * @brief Add a flink device to the system, making it live immediately.
+ * @param fdev: The flink device to add. 
+ * @return int: A negative error code is returned on failure.
  */
 int flink_device_add(struct flink_device* fdev) {
 	static unsigned int dev_counter = 0;
@@ -551,11 +610,9 @@ int flink_device_add(struct flink_device* fdev) {
 }
 
 /**
- * flink_device_remove() - remove a flink device from the system
- * @fdev: the flink_device structure to remove
- *
- * flink_device_remove() removes the device represented by @fdev from
- * the system. A negative error code is returned on failure.
+ * @brief Remove a flink device from the system.
+ * @param fdev: The flink device to remove. 
+ * @return int: A negative error code is returned on failure.
  */
 int flink_device_remove(struct flink_device* fdev) {
 	if(fdev != NULL) {
@@ -577,13 +634,10 @@ int flink_device_remove(struct flink_device* fdev) {
 }
 
 /**
- * flink_device_delete() - deletes a flink device
- * @fdev: the flink_device structure to delete
- *
- * flink_device_delete() deletes the device represented by @fdev and
- * frees the allocated memory. All subdevices will be deleted,
- * using flink_subdevice_remove() and flink_subdevice_delete. A
- * negative error code is returned on failure.
+ * @brief Deletes a flink device and frees the allocated memory. All subdevices will be deleted,
+ * using flink_subdevice_remove() and flink_subdevice_delete().
+ * @param fdev: The flink_device structure to delete. 
+ * @return int: A negative error code is returned on failure.
  */
 int flink_device_delete(struct flink_device* fdev) {
 	if(fdev != NULL) {
@@ -608,12 +662,10 @@ int flink_device_delete(struct flink_device* fdev) {
 }
 
 /**
- * flink_get_device_by_id() - get a flink device by id
- * @id: the id of the flink device
- *
- * flink_get_device_by_id() returns the flink device structure
- * with the given id. NULL is returned if no device is found
- * with the given id.
+ * @brief Get a flink device by its id.
+ * @param id: The id of the flink device. 
+ * @return flink_device*: Returns the flink device structure with the given id. 
+ * NULL is returned if no device is found with the given id.
  */
 struct flink_device* flink_get_device_by_id(u8 id) {
 	struct flink_device* fdev;
@@ -635,12 +687,10 @@ struct flink_device* flink_get_device_by_id(u8 id) {
 }
 
 /**
- * flink_get_device_by_cdev() - get a flink device by cdev
- * @char_device: pointer to the cdev struct of the flink device
- *
- * flink_get_device_by_cdev() returns the flink device structure
- * associated with the given cdev. NULL is returned if no suitable
- * device is found.
+ * @brief Get a flink device by cdev.
+ * @param char_device: Pointer to the cdev struct of a flink device. 
+ * @return flink_device*: Returns the flink device structure associated with the given cdev. 
+ * NULL is returned if no suitable device is found.
  */
 struct flink_device* flink_get_device_by_cdev(struct cdev* char_device) {
 	struct flink_device* fdev;
@@ -662,9 +712,8 @@ struct flink_device* flink_get_device_by_cdev(struct cdev* char_device) {
 }
 
 /**
- * flink_get_device_list() - get the list with all devices
- *
- * flink_get_device_by_id() returns a pointer to a list containing
+ * @brief Get a list with all devices.
+ * @return list_head*: Returns a pointer to a list containing
  * all flink devices. The list could be empty.
  */
 struct list_head* flink_get_device_list() {
@@ -672,9 +721,8 @@ struct list_head* flink_get_device_list() {
 }
 
 /**
- * flink_subdevice_alloc() - allocate a flink_subdevice structure
- *
- * Allocates and returns a flink_subdevice structure, or NULL on failure.
+ * @brief Allocate a flink_subdevice structure.
+ * @return flink_subdevice*: Pointer to the new flink_subdevice structure, or NULL on failure.
  */
 struct flink_subdevice* flink_subdevice_alloc(void) {
 	struct flink_subdevice* fsubdev = kmalloc(sizeof(struct flink_subdevice), GFP_KERNEL);
@@ -685,11 +733,9 @@ struct flink_subdevice* flink_subdevice_alloc(void) {
 }
 
 /**
- * flink_subdevice_init() - initialize a flink_subdevice structure
- * @fsubdev: the structure to initialize
- *
- * Initializes @fsubdev, making it ready to add to a flink_device
- * with flink_subdevice_add().
+ * @brief Initialize a flink_subdevice structure, making it ready to add to a flink_device
+ * with flink_subdevice_add()
+ * @param fsubdev: The structure to initialize
  */
 void flink_subdevice_init(struct flink_subdevice* fsubdev) {
 	memset(fsubdev, 0, sizeof(*fsubdev));
@@ -697,13 +743,10 @@ void flink_subdevice_init(struct flink_subdevice* fsubdev) {
 }
 
 /**
- * flink_subdevice_add() - add a flink subdevice to flink device
- * @fdev: the parent flink_device structure
- * @fsubdev: the flink_subdevice structure
- *
- * flink_subdevice_add() adds the subdevice represented by @fsubdev
- * to the parent flink device @fdev and making it available to use.
- * A negative error code is returned on failure.
+ * @brief Add a flink subdevice to flink device.
+ * @param fdev: The flink device to which the subdevice is added. 
+ * @param @fsubdev: The flink subdevice to add. 
+ * @return int: A negative error code is returned on failure.
  */
 int flink_subdevice_add(struct flink_device* fdev, struct flink_subdevice* fsubdev) {
 	if(fdev != NULL && fsubdev != NULL) {
@@ -717,7 +760,7 @@ int flink_subdevice_add(struct flink_device* fdev, struct flink_subdevice* fsubd
 		list_add(&(fsubdev->list), &(fdev->subdevices));
 		#if defined(DBG)
 			printk(KERN_DEBUG "[%s] Subdevice with id '%u' added to device with id '%u'.", MODULE_NAME, fsubdev->id, fdev->id);
-			printk(KERN_DEBUG "  -> Type:         0x%x/0x%x/0x%x", fsubdev->type_id, fsubdev->sub_type_id, fsubdev->if_version);
+			printk(KERN_DEBUG "  -> Function:         0x%x/0x%x/0x%x", fsubdev->function_id, fsubdev->sub_function_id, fsubdev->function_version);
 			printk(KERN_DEBUG "  -> Base address: 0x%x", fsubdev->base_addr);
 			printk(KERN_DEBUG "  -> Size:         0x%x (%u bytes)", fsubdev->mem_size, fsubdev->mem_size);
 			printk(KERN_DEBUG "  -> Nof Channels: %u", fsubdev->nof_channels);
@@ -732,11 +775,9 @@ int flink_subdevice_add(struct flink_device* fdev, struct flink_subdevice* fsubd
 }
 
 /**
- * flink_subdevice_remove() - remove a flink subdevice from the parent device
- * @fsubdev: the flink_subdevice structure to remove
- *
- * flink_subdevice_remove() removes the subdevice represented by @fsubdev from
- * the parent device structure. A negative error code is returned on failure.
+ * @brief Remove a flink subdevice from the parent device.
+ * @param fsubdev: The flink subdevice to remove. 
+ * @return int: A negative error code is returned on failure.
  */
 int flink_subdevice_remove(struct flink_subdevice* fsubdev) {
 	if(fsubdev != NULL) {
@@ -756,12 +797,9 @@ int flink_subdevice_remove(struct flink_subdevice* fsubdev) {
 }
 
 /**
- * flink_subdevice_delete() - deletes a flink subdevice
- * @fsubdev: the flink_subdevice structure to delete
- *
- * flink_subdevice_delete() deletes the subdevice represented by
- * @fsubdev and frees the allocated memory. A negative error
- * code is returned on failure.
+ * @brief Deletes a flink subdevice and frees the allocated memory.
+ * @param fsubdev: The flink_subdevice structure to delete. 
+ * @return int: A negative error code is returned on failure.
  */
 int flink_subdevice_delete(struct flink_subdevice* fsubdev) {
 	if(fsubdev != NULL) {
@@ -775,12 +813,11 @@ int flink_subdevice_delete(struct flink_subdevice* fsubdev) {
 }
 
 /**
- * flink_get_subdevice_by_id() - get a flink subdevice by id
- * @id: the id of the flink subdevice
- *
- * flink_get_subdevice_by_id() returns the flink subdevice structure
- * with the given id. NULL is returned if no subdevice is found
- * with the given id.
+ * @brief Get a flink subdevice by its id.
+ * @param fdev: The flink device containing the desired flink_subdevice. 
+ * @param id: The id of the flink device. 
+ * @return flink_subdevice*: Returns the flink_subdevice structure with the given id. 
+ * NULL is returned if no subdevice is found with the given id.
  */
 struct flink_subdevice* flink_get_subdevice_by_id(struct flink_device* fdev, u8 id) {
 	if(fdev != NULL) {
@@ -804,14 +841,20 @@ struct flink_subdevice* flink_get_subdevice_by_id(struct flink_device* fdev, u8 
 }
 
 /**
- * flink_get_sysfs_class() - returns the flink sysfs class.
- *
- * flink_get_sysfs_class() returns the flink sysfs class structure.
+ * @brief Get a flink sysfs class.
+ * @return class*: Pointer to the flink sysfs class structure.
  */
 struct class* flink_get_sysfs_class(void) {
 	return sysfs_class;
 }
 
+/**
+ * @brief Select a subdevice for exclusive access.
+ * @param f:  
+ * @param subdevice:  
+ * @param excl:  
+ * @return int: A negative error code is returned on failure.
+ */
 int flink_select_subdevice(struct file* f, u8 subdevice, bool excl) {
 	struct flink_private_data* pdata = (struct flink_private_data*)(f->private_data);
 	if(pdata != NULL && pdata->fdev != NULL) {

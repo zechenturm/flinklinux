@@ -1,3 +1,10 @@
+/** @file flink_pci.h
+ *  @brief Data structures for pci bus communication module. 
+ *
+ *  @author Martin Züger
+ *  @author Urs Graf
+ */
+
 #ifndef FLINK_PCI_H_
 #define FLINK_PCI_H_
 

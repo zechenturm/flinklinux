@@ -11,6 +11,14 @@
  *  PCI bus communication module                                   *
  *                                                                 *
  *******************************************************************/
+/** @file flink_pci.c
+ *  @brief PCI bus communication module. 
+ * 
+ *  Implements read and write functions over pci bus. 
+ *
+ *  @author Martin Züger
+ *  @author Urs Graf
+ */
 
 #include <linux/kernel.h>
 #include <linux/module.h>
