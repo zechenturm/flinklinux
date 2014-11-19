@@ -22,6 +22,11 @@ extern const char* fmit_lkm_lut[];
 struct flink_device;
 
 // ############ flink private data ############
+/** @brief Private data structure which is associated with a file.
+ * The user library communicates with the kernel modules through read and write system calls
+ * As a parameter a pointer to a file descriptor is passed. Within this structure the field @private_data
+ * will hold the information about which device and subdevice will be targeted.
+ */
 struct flink_private_data {
 	struct flink_device*    fdev;
 	struct flink_subdevice* current_subdevice;

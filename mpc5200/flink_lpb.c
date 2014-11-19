@@ -19,6 +19,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <asm/io.h>
+#include <asm/mpc52xx.h>
 
 #include "../flink.h"
 #include "flink_lpb.h"
