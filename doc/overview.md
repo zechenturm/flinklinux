@@ -61,4 +61,14 @@ struct flink_private_data {
 ```
 An oben file is represented in Linux ba the `file` structure. A parameter of type `file` is passed when calling `read` or `write` operations. `file` contains a field `private_data` which is used here to point to `flink_private_data` and holds the information about which device and subdevice will be targeted.
 
+##File Operations
+A flink device implements the following file operations
+- open
+- release
+- read
+- write
+- ioctl
+- llseek
+
+##Device and Subdevice Management
 Several functions to manage devices and subdevices are exported for use in other kernel modules. The API can be found in [API](../API)
