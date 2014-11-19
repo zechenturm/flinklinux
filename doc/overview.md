@@ -50,5 +50,15 @@ struct flink_bus_ops {
 	u32 (*address_space_size)(struct flink_device*);
 };
 ```
-This bus operations will later point to interface dependent functions.
+This bus operations will later point to interface dependent functions. 
+There is one more important data structure:
+```
+// ############ flink private data ############
+struct flink_private_data {
+	struct flink_device*    fdev;
+	struct flink_subdevice* current_subdevice;
+};
+```
+An oben file is represented in Linux ba the `file` structure. A parameter of type `file` is passed when calling `read` or `write` operations. `file` contains a field `private_data` which is used here to point to `flink_private_data` and holds the information about which device and subdevice will be targeted.
+
 Several functions to manage devices and subdevices are exported for use in other kernel modules. The API can be found in [API](../API)
