@@ -59,7 +59,7 @@ struct flink_private_data {
 	struct flink_subdevice* current_subdevice;
 };
 ```
-An oben file is represented in Linux ba the `file` structure. A parameter of type `file` is passed when calling `read` or `write` operations. `file` contains a field `private_data` which is used here to point to `flink_private_data` and holds the information about which device and subdevice will be targeted.
+An oben file is represented in Linux by the `file` structure. A parameter of type `file` is passed when calling `read` or `write` operations. `file` contains a field `private_data` which is used here to point to `flink_private_data` and holds the information about which device and subdevice will be targeted.
 
 ##File Operations
 A flink device implements the following file operations
