@@ -415,7 +415,7 @@ static int __init flink_init(void) {
 	sysfs_class = class_create(THIS_MODULE, SYSFS_CLASS_NAME);
 	
 	// ---- All done ----
-	printk(KERN_INFO "[%s] Module sucessfully loaded", MODULE_NAME);
+	printk(KERN_INFO "[%s] Module sucessfully loaded\n", MODULE_NAME);
 	
 	return 0;
 
@@ -431,7 +431,7 @@ static void __exit flink_exit(void) {
 	class_destroy(sysfs_class);
 	
 	// ---- All done ----
-	printk(KERN_INFO "[%s] Module sucessfully unloaded", MODULE_NAME);
+	printk(KERN_INFO "[%s] Module sucessfully unloaded\n", MODULE_NAME);
 }
 module_exit(flink_exit);
 

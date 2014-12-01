@@ -8,49 +8,78 @@
  *                                                                 *
  *******************************************************************
  *                                                                 *
- *  MPC5200 local plus bus communication module                    *
+ *  MPC5200 Local Plus Bus communication module                    *
  *                                                                 *
  *******************************************************************/
 
+/** @file flink_lpb.c
+ *  @brief MPC5200 Local Plus Bus communication module.
+ *
+ *  Implements read and write functions over Local Plus Bus.
+ *
+ *  @author Marco Tinner
+ *  @author Urs Graf
+ */
+
+#include <linux/init.h>
+#include <linux/delay.h>
+#include <linux/firmware.h>
+#include <linux/errno.h>
+#include <linux/types.h>
+#include <linux/fcntl.h>
+#include <linux/fs.h>
+#include <linux/of.h>
+#include <linux/of_platform.h>
+#include <linux/slab.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
-#include <linux/init.h>
-#include <linux/slab.h>
-#include <linux/device.h>
 #include <asm/io.h>
 #include <asm/mpc52xx.h>
 
 #include "../flink.h"
-#include "flink_lpb.h"
 
-#define DBG 1
+#define DEBUG
 #define MODULE_NAME THIS_MODULE->name
 
-#define CS3CR_ADDRESS 0xf000030c
-#define CS3START_REG_ADDRESS 0xf000001c
-#define CS3CR_VALUE 0x00ff0500 
-#define CS3_MEMORY_LENGTH 0x02000000
+// ############ Module Parameters ############
+static unsigned int dev_mem_length = 0x40;
+module_param(dev_mem_length, uint, 0444);
+MODULE_PARM_DESC(dev_mem_length, "device memory length");
 
-//TODO insert to chose between CS3, CS4 and both to expand memory range
-
-MODULE_AUTHOR("Marco Tinner <marco.tinner@ntb.ch>");
+MODULE_AUTHOR("Urs Graf");
 MODULE_DESCRIPTION("fLink local plus bus module for mpc5200");
 MODULE_SUPPORTED_DEVICE("fLink LPB devices");
 MODULE_LICENSE("Dual BSD/GPL");
 
-// ############ Module parameters ############
-static unsigned int dev_mem_length = 0x40;
+/// @brief Local Plus Bus device data
+struct flink_lpb_data {
+	void __iomem* base_ptr;
+	unsigned long base_address;
+	unsigned long mem_size;
+}* lpb_data;
 
-module_param(dev_mem_length, uint, 0444);
-MODULE_PARM_DESC(dev_mem_length, "Device memory length");
-
+/* Chip Select Controller */
+struct mpc52xx_cs_ctl {
+	u32 cs0_boot_cr;	/* CS_CTRL + 0x00 */
+	u32 cs1_cr;			/* CS_CTRL + 0x04 */
+	u32 cs2_cr;			/* CS_CTRL + 0x08 */
+	u32 cs3_cr;			/* CS_CTRL + 0x0c */
+	u32 cs4_cr;			/* CS_CTRL + 0x10 */
+	u32 cs5_cr;			/* CS_CTRL + 0x14 */
+	u32 cs_cr;			/* CS_CTRL + 0x18 */
+	u32 cs_sr;			/* CS_CTRL + 0x1c */
+	u32 cs6_cr;			/* CS_CTRL + 0x20 */
+	u32 cs7_cr;			/* CS_CTRL + 0x24 */
+	u32 csb_cr;			/* CS_CTRL + 0x28 */
+	u32 csdc_cr;		/* CS_CTRL + 0x2c */
+};
 
 // ############ Bus communication functions ############
 u8 lpb_read8(struct flink_device* fdev, u32 addr) {
 	struct flink_lpb_data* lpb_data = (struct flink_lpb_data*)fdev->bus_data;
 	if(lpb_data != NULL) {
-		return ioread8(lpb_data->base_ptr + addr);
+		return in_8(lpb_data->base_ptr + addr);
 	}
 	return 0;
 }
@@ -58,7 +87,7 @@ u8 lpb_read8(struct flink_device* fdev, u32 addr) {
 u16 lpb_read16(struct flink_device* fdev, u32 addr) {
 	struct flink_lpb_data* lpb_data = (struct flink_lpb_data*)fdev->bus_data;
 	if(lpb_data != NULL) {
-		return le16_to_cpu(ioread16(lpb_data->base_ptr + addr));
+		return in_be16(lpb_data->base_ptr + addr);
 	}
 	return 0;
 }
@@ -66,7 +95,7 @@ u16 lpb_read16(struct flink_device* fdev, u32 addr) {
 u32 lpb_read32(struct flink_device* fdev, u32 addr){
 	struct flink_lpb_data* lpb_data = (struct flink_lpb_data*)fdev->bus_data;
 	if(lpb_data != NULL) {
-		return le32_to_cpu(ioread32(lpb_data->base_ptr + addr));
+		return in_be32(lpb_data->base_ptr + addr);
 	}
 	return 0;
 }
@@ -74,7 +103,7 @@ u32 lpb_read32(struct flink_device* fdev, u32 addr){
 int lpb_write8(struct flink_device* fdev, u32 addr, u8 val) {
 	struct flink_lpb_data* lpb_data = (struct flink_lpb_data*)fdev->bus_data;
 	if(lpb_data != NULL) {
-		iowrite8(val,lpb_data->base_ptr+ addr);
+		out_8(lpb_data->base_ptr + addr, val);
 	}
 	return 0;
 }
@@ -82,16 +111,16 @@ int lpb_write8(struct flink_device* fdev, u32 addr, u8 val) {
 int lpb_write16(struct flink_device* fdev, u32 addr, u16 val) {
 	struct flink_lpb_data* lpb_data = (struct flink_lpb_data*)fdev->bus_data;
 	if(lpb_data != NULL) {
-		iowrite16(cpu_to_le16(val),lpb_data->base_ptr+ addr);
+		out_be16(lpb_data->base_ptr + addr, val);
 	}
 	return 0;
 }
 
 int lpb_write32(struct flink_device* fdev, u32 addr, u32 val) {
-	
+
 	struct flink_lpb_data* lpb_data = (struct flink_lpb_data*)fdev->bus_data;
 	if(lpb_data != NULL) {
-		iowrite32(cpu_to_le32(val),lpb_data->base_ptr+ addr);
+		out_be32(lpb_data->base_ptr + addr, val);
 	}
 	return 0;
 }
@@ -111,126 +140,148 @@ struct flink_bus_ops lpb_bus_ops = {
 	.address_space_size = lpb_address_space_size
 };
 
-// ############ Initialization and cleanup ############
-static int __init flink_lpb_init(void) {
-	int error = 0;
-	struct flink_lpb_data* lpb_data = kmalloc(sizeof(struct flink_lpb_data), GFP_KERNEL); 
-	struct flink_device* fdev = flink_device_alloc();	
-	void __iomem* reg;
-	unsigned int base_address;
+// search for compatible node in device tree, returns node
+static struct device_node* getNode(const char *compatible) {
+	struct device_node *ofn;
+	ofn = of_find_compatible_node(NULL, NULL, compatible);
+	if (!ofn) {
+		printk(KERN_ERR "[%s] %s: of_find_compatible_node error\n", MODULE_NAME, __FUNCTION__);
+		return NULL;
+	}
+	return ofn;
+}
 
-	#if defined(DBG)
-		printk(KERN_DEBUG "[%s] Initializing module with parameters 'length=%x'", MODULE_NAME, dev_mem_length);
+// ############ Driver probe and release functions ############
+static int __devinit flink_probe(struct platform_device *ofdev) {
+	int len;
+	struct device_node *devNode;
+	const u32 *propReg, *propRanges;
+	u32 cs, csStartAddr, csSize, flag = 0;
+	const u32 *addrPtr;
+	u64 addr64, size64;
+	u32 __iomem* csPtr;
+	u32 __iomem* ptr;
+	struct flink_device* fdev;
+	struct mpc52xx_mmap_ctl __iomem *immr;
+	struct mpc52xx_cs_ctl __iomem *csctl;
+
+	if(lpb_data != NULL) return 0;	// second run of probe
+	lpb_data = kmalloc(sizeof(struct flink_lpb_data), GFP_KERNEL);
+	fdev = flink_device_alloc();
+
+	// get chip select number for FPGA
+	devNode = getNode("ntb,flink_driver");
+	if(!devNode) return -1;
+	propReg = of_get_property(devNode, "reg", &len);
+	cs = propReg[0];
+	of_node_put(devNode);
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] chip select number = %d\n", MODULE_NAME, cs);
+	#endif
+	flag |= 1 << (cs+16);
+	if(cs > 5) flag <<= 4;
+
+	// get chip select range for FPGA
+	devNode = getNode("fsl,mpc5200b-lpb");
+	if(!devNode) return -1;
+	propRanges = of_get_property(devNode, "ranges", &len);
+	csStartAddr = propRanges[cs*4+2];
+	of_node_put(devNode);
+	csSize = propRanges[cs*4+3];
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] chip select start address = 0x%x\n", MODULE_NAME, csStartAddr);
+		printk(KERN_DEBUG "[%s] chip select size = 0x%x\n", MODULE_NAME, csSize);
 	#endif
 
-	//get CS3 data and configure it
-	//config CS3
-	if (check_mem_region(CS3CR_ADDRESS, 4)) {
-		printk(KERN_ALERT "[%s] ERROR: CS3 configuration register memory already in use\n", MODULE_NAME);
-		goto check_mem_region_CS3CR_fail;
+	// set chip select range for FPGA
+	devNode = getNode("fsl,mpc5200b-immr");
+	if(!devNode) return -1;
+	addrPtr = of_get_address(devNode, 0, &size64, NULL);
+	addr64 = of_translate_address(devNode, addrPtr);
+	of_node_put(devNode);
+	if(request_mem_region((u32)addr64, (u32)size64, MODULE_NAME) == NULL) {
+		printk(KERN_ERR "[%s] ERROR: I/O request memory region MMR failed!\n", MODULE_NAME);
+		return -1;
 	}
-	if(request_mem_region(CS3CR_ADDRESS, 4, MODULE_NAME)== NULL){
-		printk(KERN_ALERT "[%s] ERROR: I/O request memory region CS3 configuration register failed!", MODULE_NAME);
-		goto check_mem_region_CS3CR_fail;
-	}
-	reg = ioremap(CS3CR_ADDRESS,4);
-	if(reg == NULL){
-		printk(KERN_ALERT "[%s] ERROR: CS3 configuration register io remap failed!", MODULE_NAME);
-		goto iomap_mem_region_CS3CR_fail;
-	}
-	iowrite32(CS3CR_VALUE,reg);
-	iounmap(reg);
-	//get CS3 start address
-	if (check_mem_region(CS3START_REG_ADDRESS, 4)) {
-		printk(KERN_ALERT "[%s] ERROR: CS3 start address register memory already in use\n", MODULE_NAME);
-		goto check_mem_region_CS3ST_fail;
-	}
-	if(request_mem_region(CS3START_REG_ADDRESS, 4, MODULE_NAME)== NULL){
-		printk(KERN_ALERT "[%s] ERROR: I/O request memory region CS3 start address register failed!", MODULE_NAME);
-		goto check_mem_region_CS3ST_fail;
-	}
-	reg = ioremap(CS3START_REG_ADDRESS,4);
-	if(reg == NULL){
-		printk(KERN_ALERT "[%s] ERROR: CS3 start address io remap failed!", MODULE_NAME);
-		goto iomap_mem_region_CS3ST_fail;
-	}
-	base_address = le32_to_cpu(ioread32(reg))<<16;
-	#if defined(DBG)
-		printk(KERN_DEBUG "[%s] CS3 start address: 0x%x", MODULE_NAME,base_address);
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] iomap from 0x%x, size 0x%x\n", MODULE_NAME, (u32)addr64, (u32)size64);
 	#endif
-	iounmap(reg);
+	immr = ioremap((u32)addr64, (u32)size64);
+	immr->ipbi_ws_ctrl |= flag;
+	iounmap(immr);
+	immr = NULL;
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] unmapping IMMR memory region\n", MODULE_NAME);
+	#endif
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] iomap from 0x%x, size 0x%x\n", MODULE_NAME, (u32)addr64, (u32)size64);
+	#endif
+	csPtr = ioremap((u32)addr64, (u32)size64);
+	ptr = csPtr + 1 + cs*2;
+	if(cs > 5) ptr += 9;
+	out_be32(ptr, csStartAddr >> 16);
+	out_be32(ptr+1, (csStartAddr + csSize - 1) >> 16);
+	iounmap(csPtr);
+	csPtr = NULL;
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] unmapping IMMR memory region\n", MODULE_NAME);
+	#endif
+	release_mem_region((u32)addr64, (u32)size64);
 
-	//create flink device
-	if(dev_mem_length <= 0){
-		printk(KERN_ALERT "[%s] ERROR: device memory length has to be bigger than 0!", MODULE_NAME);
-		goto flink_device_alloc_fail;
+	// set chip select properties in chip select controller for FPGA
+	devNode = getNode("fsl,mpc5200b-csc");
+	if(!devNode) return -1;
+	addrPtr = of_get_address(devNode, 0, &size64, NULL);
+	addr64 = of_translate_address(devNode, addrPtr);
+	of_node_put(devNode);
+	if(request_mem_region((u32)addr64, (u32)size64, MODULE_NAME) == NULL) {
+		printk(KERN_ERR "[%s] ERROR: I/O request memory region CSC failed!\n", MODULE_NAME);
+		return -1;
 	}
-	if(dev_mem_length > CS3_MEMORY_LENGTH){
-		printk(KERN_ALERT "[%s] ERROR: device memory length has to be smaller than 0x%x!", MODULE_NAME,CS3_MEMORY_LENGTH);
-		goto flink_device_alloc_fail;
-	}
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] iomap from 0x%x, size 0x%x\n", MODULE_NAME, (u32)addr64, (u32)size64);
+	#endif
+	csctl = ioremap((u32)addr64, (u32)size64);
+	printk(KERN_DEBUG "[%s] csctl.cs3 = 0x%x\n", MODULE_NAME, csctl->cs3_cr);
+	iounmap(csctl);
+	csctl = NULL;
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] unmapping CSCTL memory region\n", MODULE_NAME);
+	#endif
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] iomap from 0x%x, size 0x%x\n", MODULE_NAME, (u32)addr64, (u32)size64);
+	#endif
+	csPtr = ioremap((u32)addr64, (u32)size64);
+	ptr = csPtr + cs;
+	if(cs > 5) ptr += 2;
+	out_be32(ptr, 0x5ff00);
+	iounmap(csPtr);
+	csPtr = NULL;
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] unmapping CSCTL memory region\n", MODULE_NAME);
+	#endif
+	release_mem_region((u32)addr64, (u32)size64);
 
-	if(fdev == NULL){
-		printk(KERN_ALERT "[%s] ERROR: fLink device alloc failed!", MODULE_NAME);
-		goto flink_device_alloc_fail;
-	}		
-	if(lpb_data == NULL){
-		printk(KERN_ALERT "[%s] ERROR: Memory alloc for lpb data failed!", MODULE_NAME);
-		goto mem_alloc_fail;
-	}
+	// setup FPGA memory region
+	lpb_data->base_address = csStartAddr;
 	lpb_data->mem_size = dev_mem_length;
-
-	//request CS3 local plus bus memory space
-	if (check_mem_region(base_address, dev_mem_length)) {
-		printk(KERN_ALERT "[%s] ERROR: memory already in use \n", MODULE_NAME);
-		goto mem_reg_fail;
+	if(request_mem_region(csStartAddr, dev_mem_length, MODULE_NAME) == NULL) {
+		printk(KERN_ERR "[%s] ERROR: I/O request memory region for FPGA (addr=0x%x, size=0x%x) failed!\n", MODULE_NAME, csStartAddr, dev_mem_length);
+		return -1;
 	}
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] iomap from 0x%x, size 0x%x\n", MODULE_NAME, csStartAddr, dev_mem_length);
+	#endif
+	lpb_data->base_ptr = ioremap(csStartAddr, dev_mem_length);
 
-
-	if(request_mem_region(base_address, dev_mem_length, MODULE_NAME) == NULL){
-		printk(KERN_ALERT "[%s] ERROR: I/O request memory region failed!", MODULE_NAME);
-		goto mem_reg_fail;
-	}
-	lpb_data->base_address = base_address;
-	lpb_data->base_ptr = ioremap(base_address, dev_mem_length);
-	if(lpb_data->base_ptr == NULL) {
-		printk(KERN_ALERT "[%s] ERROR: io remap failed!", MODULE_NAME);
-		goto mem_remap_fail;
-	}
-	
-	
-
+	// setup flink devices
 	flink_device_init(fdev, &lpb_bus_ops, THIS_MODULE);
 	fdev->bus_data = lpb_data;
 	flink_device_add(fdev);
-	
-	// All done
-	printk(KERN_INFO "[%s] Module sucessfully loaded", MODULE_NAME);
-	
 	return 0;
-
-// ---- ERROR HANDLING ----
-
-	mem_remap_fail:
-		release_mem_region(base_address, dev_mem_length);
-	mem_reg_fail:
-		kfree(lpb_data);
-	mem_alloc_fail:
-		flink_device_delete(fdev);
-	flink_device_alloc_fail:
-	iomap_mem_region_CS3ST_fail:
-		release_mem_region(CS3START_REG_ADDRESS,4);
-	check_mem_region_CS3ST_fail:
-	iomap_mem_region_CS3CR_fail:
-		release_mem_region(CS3CR_ADDRESS,4);
-	check_mem_region_CS3CR_fail:
-	return error;
-
 }
 
-
-static void __exit flink_lpb_exit(void) {
-	
+static int __devexit driver_remove(struct platform_device *ofdev) {
 	struct flink_device* fdev;
 	struct flink_device* fdev_next;
 	struct flink_lpb_data* lpb_data;
@@ -239,16 +290,83 @@ static void __exit flink_lpb_exit(void) {
 		if(fdev->appropriated_module == THIS_MODULE) {
 			lpb_data = (struct flink_lpb_data*)(fdev->bus_data);
 			iounmap(lpb_data->base_ptr);
+			#if defined(DEBUG)
+				printk(KERN_DEBUG "[%s] unmapping FPGA memory region (addr=0x%x, size=0x%x)\n", MODULE_NAME, (u32)lpb_data->base_address, (u32)lpb_data->mem_size);
+			#endif
 			release_mem_region(lpb_data->base_address,lpb_data->mem_size);
 			kfree(lpb_data);
 			flink_device_remove(fdev);
 			flink_device_delete(fdev);
 		}
 	}
-	release_mem_region(CS3CR_ADDRESS,4);
-	release_mem_region(CS3START_REG_ADDRESS,4);
-	printk(KERN_INFO "[%s] Module sucessfully unloaded", MODULE_NAME);
+	return 0;
 }
 
-module_init(flink_lpb_init);
-module_exit(flink_lpb_exit);
+static void dev_release (struct device *dev) {}
+
+// ############ Data structures for platform driver and device ############
+
+/* Device tree match table for this device */
+static struct of_device_id flink_device_ids[] = {
+	{ .compatible = "ntb,flink_driver" },
+	{}
+};
+
+MODULE_DEVICE_TABLE(of, flink_device_ids);
+
+static struct platform_driver flink_lpb_driver = {
+	.probe = flink_probe,	// is called when registering device
+	.remove = __devexit_p(driver_remove),
+	.driver = {
+		.name = "flink_lpb_device",
+		.owner = THIS_MODULE,
+		.of_match_table = flink_device_ids,
+	},
+};
+
+static struct platform_device flink_lpb_device = {
+	.name = "flink_lpb_device",
+	.id = -1,
+	.dev.release	= dev_release,	// is called when unregistering device
+};
+
+// ############ Initialization and cleanup ############
+static int __init mod_init(void) {
+	int err = 0;
+
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] Registering device driver\n", MODULE_NAME);
+	#endif
+
+	err = platform_device_register(&flink_lpb_device);
+	if (err) {
+		printk(KERN_ERR "Cannot register device\n");
+		goto exit;
+	}
+
+	err = platform_driver_register(&flink_lpb_driver);
+	if (err) {
+		printk(KERN_ERR "Unable to register [%s]: device driver: %d\n", MODULE_NAME, err);
+		goto exit_unregister_device;
+	}
+
+	printk(KERN_INFO "[%s] Module sucessfully loaded\n", MODULE_NAME);
+	return 0;
+
+exit_unregister_device:
+	platform_device_unregister(&flink_lpb_device);
+exit:
+	return err;
+}
+
+static void __exit mod_exit(void) {
+	#if defined(DEBUG)
+		printk(KERN_DEBUG "[%s] Unloading device driver\n", MODULE_NAME);
+	#endif
+	platform_driver_unregister(&flink_lpb_driver);
+	platform_device_unregister(&flink_lpb_device);
+	printk(KERN_INFO "[%s] Module sucessfully unloaded\n", MODULE_NAME);
+}
+
+module_init(mod_init);
+module_exit(mod_exit);
