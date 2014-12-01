@@ -14,7 +14,7 @@ struct flink_bus_ops {
 };
 ```
 
-Currently we support transfer over PCI (`pci.c`).
+Currently we support transfer over PCI (`flink_pci.c`).
 
 For the *Phytec phyCORE-MPC5200B-I/O* board there is a driver using the local plus bus on the mpc5200 (`flink_lpb.c`).
 
