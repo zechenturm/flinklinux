@@ -7,4 +7,5 @@ This documentation is intended for developers to understand the internals of the
 
 ## Documentation
 - [Overview](doc/overview.md)
-- [API](doc/api.md)
+- [Bus Communication Modules](doc/bcm.md)
+- [API](doc/html/index.html)

@@ -1,3 +1,9 @@
+/** @file flink.h
+ *  @brief Function prototypes and data structures for core module.
+ *
+ *  @author Martin Züger
+ *  @author Urs Graf
+ */
 #ifndef FLINK_H_
 #define FLINK_H_
 
@@ -16,48 +22,55 @@ extern const char* fmit_lkm_lut[];
 struct flink_device;
 
 // ############ flink private data ############
+/** @brief Private data structure which is associated with a file.
+ * The user library communicates with the kernel modules through read and write system calls
+ * As a parameter a pointer to a file descriptor is passed. Within this structure the field @private_data
+ * will hold the information about which device and subdevice will be targeted.
+ */
 struct flink_private_data {
 	struct flink_device*    fdev;
 	struct flink_subdevice* current_subdevice;
 };
 
 // ############ flink bus operations ############
+/// @brief Functions to communicate with various bus communication modules
 struct flink_bus_ops {
-	u8  (*read8)(struct flink_device*, u32 addr);
-	u16 (*read16)(struct flink_device*, u32 addr);
-	u32 (*read32)(struct flink_device*, u32 addr);
-	int (*write8)(struct flink_device*, u32 addr, u8 val);
-	int (*write16)(struct flink_device*, u32 addr, u16 val);
-	int (*write32)(struct flink_device*, u32 addr, u32 val);
-	u32 (*address_space_size)(struct flink_device*);
+	u8  (*read8)(struct flink_device*, u32 addr);			/// read 1 byte
+	u16 (*read16)(struct flink_device*, u32 addr);			/// read 2 bytes
+	u32 (*read32)(struct flink_device*, u32 addr);			/// read 4 bytes
+	int (*write8)(struct flink_device*, u32 addr, u8 val);		/// write 1 byte
+	int (*write16)(struct flink_device*, u32 addr, u16 val);	/// write 2 bytes
+	int (*write32)(struct flink_device*, u32 addr, u32 val);	/// write 4 bytes
+	u32 (*address_space_size)(struct flink_device*);		/// get address space size
 };
 
 // ############ flink subdevice ############
 #define MAX_NOF_SUBDEVICES 256
-
+/// @brief Describes a subdevice
 struct flink_subdevice {
-	struct list_head     list;
-	struct flink_device* parent;
-	u8                   id;
-	u16                  type_id;
-	u8                   sub_type_id;
-	u8                   if_version;
-	u32                  base_addr;
-	u32                  mem_size;
-	u32                  nof_channels;
+	struct list_head     list;			/// Linked list of all subdevices of a device
+	struct flink_device* parent;			/// Pointer to device which this subdevice belongs
+	u8                   id;			/// Identifies a subdevice within a device
+	u16                  function_id;		/// Identifies the function of the subdevice
+	u8                   sub_function_id;		/// Identifies the subtype of the subdevice
+	u8                   function_version;		/// Version of the function
+	u32                  base_addr;			/// Base address (logical)
+	u32                  mem_size;			/// Address space size
+	u32                  nof_channels;		/// Number of channels
 };
 
 // ############ flink device ############
+/// @brief Describes a device
 struct flink_device {
-	struct list_head      list;
-	u8                    id;
-	u8                    nof_subdevices;
-	struct list_head      subdevices;
-	struct flink_bus_ops* bus_ops;
-	struct module*        appropriated_module;
-	void*                 bus_data;
-	struct cdev*          char_device;
-	struct device*        sysfs_device;
+	struct list_head      list;			/// Linked list of all devices
+	u8                    id;			/// Identifies a device
+	u8                    nof_subdevices;		/// Number of devices
+	struct list_head      subdevices;		/// Linked list of all subdevices of this device
+	struct flink_bus_ops* bus_ops;			/// Pointer to structure defining the bus operation functions of this device
+	struct module*        appropriated_module;	/// Pointer to bus interface modul used for this device 
+	void*                 bus_data;			/// Bus specific data
+	struct cdev*          char_device;		/// Pointer to cdev structure
+	struct device*        sysfs_device;		/// Pointer to sysfs device structure
 };
 
 // ############ Public functions ############
@@ -84,10 +97,10 @@ extern int                     flink_select_subdevice(struct file* f, u8 subdevi
 // ############ Constants ############
 
 // Memory addresses and offsets
-#define MAIN_HEADER_SIZE			16		// byte
-#define SUB_HEADER_SIZE				16		// byte
-#define SUBDEV_TYPE_OFFSET			0x0000	// byte
-#define SUBDEV_SIZE_OFFSET			0x0004	// byte
+#define MAIN_HEADER_SIZE		16	// byte
+#define SUB_HEADER_SIZE			16	// byte
+#define SUBDEV_TYPE_OFFSET		0x0000	// byte
+#define SUBDEV_SIZE_OFFSET		0x0004	// byte
 #define SUBDEV_NOFCHANNELS_OFFSET	0x0008	// byte
 #define SUBDEV_STATUS_OFFSET		0x0010	// byte
 #define SUBDEV_CONFIG_OFFSET		0x0014	// byte
@@ -108,10 +121,11 @@ extern int                     flink_select_subdevice(struct file* f, u8 subdevi
 #define WRITE_SINGLE_BIT			0x31
 
 // Userland types and sizes
+/// @brief Structure containing information for ioctl system calls accessing single bits
 struct ioctl_bit_container_t {
-	uint32_t offset;
-	uint8_t  bit;
-	uint8_t  value;
+	uint32_t offset;	
+	uint8_t  bit;		
+	uint8_t  value;		
 };
 
 // size of struct 'flink_subdevice' without linked list information (in bytes)

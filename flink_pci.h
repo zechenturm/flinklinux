@@ -1,3 +1,10 @@
+/** @file flink_pci.h
+ *  @brief Data structures for pci bus communication module. 
+ *
+ *  @author Martin Züger
+ *  @author Urs Graf
+ */
+
 #ifndef FLINK_PCI_H_
 #define FLINK_PCI_H_
 
@@ -7,7 +14,7 @@
 #define PCI_CONFIG_SIZE 0x4000
 #define BASE_OFFSET (PCI_CONFIG_BASE + PCI_CONFIG_SIZE)
 
-// PCI device data
+/// @brief PCI device data
 struct flink_pci_data {
 	struct pci_dev* pci_device;
 	void __iomem* base_addr;
