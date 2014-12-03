@@ -1,5 +1,5 @@
 #Overview
-All the basic funtionality can be found in the file `flink_core.c` together with all necessary types and prototypes in `flink.h`. [Bus Communication Modules](bcm.md) implement this basic functionality for a given hardware interface.
+All the basic functionality can be found in the file `flink_core.c` together with all necessary types and prototypes in `flink.h`. [Bus Communication Modules](bcm.md) implement this basic functionality for a given hardware interface.
 
 ##Data Structures
 The information for a specific flink device will be stored in a structure `flink_device`.
