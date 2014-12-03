@@ -552,6 +552,12 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 	return subdevice_counter;
 }
 
+/*******************************************************************
+ *                                                                 *
+ *  Public methods                                                 *
+ *                                                                 *
+ *******************************************************************/
+
 /**
  * @brief Allocate a flink_device structure.
  * @return flink_device*: Pointer to the new flink_device structure, or NULL on failure.

@@ -64,7 +64,7 @@ struct flink_subdevice {
 struct flink_device {
 	struct list_head      list;			/// Linked list of all devices
 	u8                    id;			/// Identifies a device
-	u8                    nof_subdevices;		/// Number of devices
+	u8                    nof_subdevices;		/// Number of subdevices
 	struct list_head      subdevices;		/// Linked list of all subdevices of this device
 	struct flink_bus_ops* bus_ops;			/// Pointer to structure defining the bus operation functions of this device
 	struct module*        appropriated_module;	/// Pointer to bus interface modul used for this device 
