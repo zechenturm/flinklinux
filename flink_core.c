@@ -33,7 +33,7 @@
 
 #include "flink.h"
 
-#define DBG 0
+//#define DBG
 #define MODULE_NAME THIS_MODULE->name
 #define SYSFS_CLASS_NAME "flink"
 #define MAX_DEV_NAME_LENGTH 15

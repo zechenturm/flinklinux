@@ -24,8 +24,13 @@ else
 ifeq ($(CONFIG_PCI),y) 
 	obj-m += flink_pci.o 
 endif
+
+ifeq ($(CONFIG_SPI),y) 
+	obj-m += flink_spi.o 
+endif
+
 ifeq ($(CONFIG_PPC_MPC5200_SIMPLE),y)
-	obj-m += mpc5200/flink_lpb.o mpc5200/flink_spi.o
+	obj-m += mpc5200/flink_lpb.o #mpc5200/flink_spi.o
 endif
 	flink-objs := flink_core.o
 endif
