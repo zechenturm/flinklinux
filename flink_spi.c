@@ -35,7 +35,7 @@
 #define MODULE_NAME THIS_MODULE->name
 
 // ############ Module Parameters ############
-static unsigned int dev_mem_length = 0x40;
+static unsigned int dev_mem_length = MAX_ADDRESS_SPACE;
 module_param(dev_mem_length, uint, 0444);
 MODULE_PARM_DESC(dev_mem_length, "device memory length");
 
@@ -48,54 +48,25 @@ MODULE_ALIAS("spi:flink_spi");
 
 /// @brief SPI bus data
 struct spi_data {
-	dev_t				devt;
 	spinlock_t			spi_lock;
 	struct spi_device*	spi;
-	struct list_head	device_entry;
-
-	/* TODO buffer is NULL unless this device is open (users > 0) */
-	struct mutex		buf_lock;
-//	unsigned			users;
 	u32*				txBuf;	// byte ordering in memory is platform specific
 	u32*				rxBuf;
 	unsigned long 		mem_size; // memory size of flink device including all subdevices
 };
 
-struct spi_transfer	t1 = {
-	.len = 4,
-};
-struct spi_transfer	t2 = {
-	.len = 4,
-};
-struct spi_transfer	t3 = {
-	.len = 4,
-};
-struct spi_transfer	t4 = {
-	.len = 4,
-};
-struct spi_transfer	t5 = {
-	.len = 4,
-};
-struct spi_transfer	t6 = {
-	.len = 4,
-};
-struct spi_transfer	r1 = {
-	.len		= 4,
-};
-struct spi_message msg;
-
+struct spi_transfer	t1 = {.len = 4,}, t2 = {.len = 4,}, r1 = {.len = 4,};
+struct spi_message m1,m2;
 static LIST_HEAD(device_list);
-//static DEFINE_MUTEX(device_list_lock);
-
-// ############ Prototypes ############
-
 
 // ############ Bus communication functions ############
 u8 spi_read8(struct flink_device* fdev, u32 addr) {
+	printk(KERN_DEBUG "[%s] 8 bit transfers not supported in flink spi", MODULE_NAME);
 	return 0;
 }
 
 u16 spi_read16(struct flink_device* fdev, u32 addr) {
+	printk(KERN_DEBUG "[%s] 16 bit transfers not supported in flink spi", MODULE_NAME);
 	return 0;
 }
 
@@ -103,13 +74,15 @@ u32 spi_read32(struct flink_device* fdev, u32 addr) {
 	ssize_t	status = 0;
 	struct spi_data* data = (struct spi_data*)fdev->bus_data;
 	u32 val;
-	spi_message_init(&msg);
+	spi_message_init(&m1);
+	spi_message_init(&m2);
 	t1.tx_buf = data->txBuf;
 	*data->txBuf = addr;
 	r1.rx_buf = data->rxBuf;
-	spi_message_add_tail(&t1, &msg);
-	spi_message_add_tail(&r1, &msg);
-	status = spi_sync(data->spi, &msg);
+	spi_message_add_tail(&t1, &m1);
+	spi_message_add_tail(&r1, &m2);
+	status = spi_sync(data->spi, &m1);
+	status = spi_sync(data->spi, &m2);
 	val = *data->rxBuf;
 //	printk(KERN_DEBUG "[%s] read from addr: 0x%x\n", MODULE_NAME, (u32)*data->txBuf);
 //	printk(KERN_DEBUG "[%s] read: 0x%x\n", MODULE_NAME, val);
@@ -117,32 +90,28 @@ u32 spi_read32(struct flink_device* fdev, u32 addr) {
 }
 
 int spi_write8(struct flink_device* fdev, u32 addr, u8 val) {
-	// TODO
+	printk(KERN_DEBUG "[%s] 8 bit transfers not supported in flink spi", MODULE_NAME);
 	return -1;
 }
 
 int spi_write16(struct flink_device* fdev, u32 addr, u16 val) {
-	// TODO
+	printk(KERN_DEBUG "[%s] 16 bit transfers not supported in flink spi", MODULE_NAME);
 	return -1;
 }
 
 int spi_write32(struct flink_device* fdev, u32 addr, u32 val) {
-//	static u32 count = 0;
 	ssize_t	status = 0;
 	struct spi_data* data = (struct spi_data*)fdev->bus_data;
-	spi_message_init(&msg);
-//	if(count < 3) {
+	spi_message_init(&m1);
+	spi_message_init(&m2);
 	t1.tx_buf = data->txBuf;
 	*data->txBuf = addr | 0x80000000;	// set write bit
 	t2.tx_buf = data->txBuf + 1;
 	*(data->txBuf + 1) = val;
-//	t3.tx_buf = data->txBuf;
-//	t4.tx_buf = data->txBuf;
-//	t5.tx_buf = data->txBuf;
-//	t6.tx_buf = data->txBuf;
-	spi_message_add_tail(&t1, &msg);
-	spi_message_add_tail(&t2, &msg);
-	status = spi_sync(data->spi, &msg);
+	spi_message_add_tail(&t1, &m1);
+	spi_message_add_tail(&t2, &m2);
+	status = spi_sync(data->spi, &m1);
+	status = spi_sync(data->spi, &m2);
 //	printk(KERN_DEBUG "[%s] write to addr: 0x%x\n", MODULE_NAME, *data->txBuf);
 //	printk(KERN_DEBUG "[%s] write: 0x%x\n", MODULE_NAME, *(data->txBuf+1));
 	return 0;
@@ -163,14 +132,10 @@ struct flink_bus_ops spi_bus_ops = {
 	.address_space_size = spi_address_space_size
 };
 
-// ########### Helper functions ##########
-
-
 // ############ Driver probe and release functions ############
 static int __devinit flink_spi_probe(struct spi_device *spi) {
 	struct flink_device* fdev;
-	struct spi_data *spiData;
-	int	status = 0;
+	struct spi_data* spiData;
 
 	#if defined(DBG)
 		printk(KERN_DEBUG "[%s] Run probe\n", MODULE_NAME);
@@ -181,36 +146,24 @@ static int __devinit flink_spi_probe(struct spi_device *spi) {
 	// Initialize the driver data
 	spiData->spi = spi;
 	spin_lock_init(&spiData->spi_lock);
-	mutex_init(&spiData->buf_lock);
 
-	INIT_LIST_HEAD(&spiData->device_entry);
-	if (status == 0)
-		spi_set_drvdata(spi, spiData);
-	else {
-		kfree(spiData);
-		return -1;
-	}
+	spi_set_drvdata(spi, spiData);
 
-	if(dev_mem_length <= 0){
-		printk(KERN_ALERT "[%s] ERROR: device memory length has to be bigger than 0!", MODULE_NAME);
-		return -1;
-	}
 	spiData->mem_size = dev_mem_length;
-	spiData->txBuf = kmalloc(BUFSIZE, GFP_KERNEL);
+	spiData->txBuf = kmalloc(BUFSIZE, GFP_KERNEL);	// Allocate buffers
 	spiData->rxBuf = kmalloc(BUFSIZE, GFP_KERNEL);
-	if (!spiData->txBuf || !spiData->rxBuf) return -ENOMEM;
-	spi_message_init(&msg);
+	if (!spiData->txBuf || !spiData->rxBuf) {
+		kfree(spiData);
+		return -ENOMEM;
+	}
 
 	fdev = flink_device_alloc();
-
 	flink_device_init(fdev, &spi_bus_ops, THIS_MODULE);
 	fdev->bus_data = spiData;
 	flink_device_add(fdev);	// creates device nodes
+
 	return 0;
 }
-
-static struct class *spidev_class;
-
 
 static int __devexit flink_spi_remove(struct spi_device *spi) {
 	struct spi_data* spiData = spi_get_drvdata(spi);
@@ -233,16 +186,8 @@ static int __devexit flink_spi_remove(struct spi_device *spi) {
 	spiData->spi = NULL;
 	spi_set_drvdata(spi, NULL);
 	spin_unlock_irq(&spiData->spi_lock);
-
-	/* prevent new opens */
-//	mutex_lock(&device_list_lock);
-	list_del(&spiData->device_entry);
-	device_destroy(spidev_class, spiData->devt);
-//	clear_bit(MINOR(spidev->devt), minors);
-//	if (spidev->users == 0)
-//		kfree(spidev);
-//	mutex_unlock(&device_list_lock);
-
+	kfree(spiData->txBuf);
+	kfree(spiData->rxBuf);
 	kfree(spiData);
 
 	return 0;

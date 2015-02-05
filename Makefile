@@ -30,7 +30,7 @@ ifeq ($(CONFIG_SPI),y)
 endif
 
 ifeq ($(CONFIG_PPC_MPC5200_SIMPLE),y)
-	obj-m += mpc5200/flink_lpb.o #mpc5200/flink_spi.o
+	obj-m += mpc5200/flink_lpb.o
 endif
 	flink-objs := flink_core.o
 endif
