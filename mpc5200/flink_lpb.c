@@ -39,7 +39,7 @@
 
 #include "../flink.h"
 
-#define DEBUG
+//#define DEBUG
 #define MODULE_NAME THIS_MODULE->name
 
 // ############ Module Parameters ############

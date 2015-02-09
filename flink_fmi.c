@@ -1,7 +1,7 @@
 #include "flink.h"
 
 const char* fmit_lkm_lut[] = {
-	[0x00] = "unused",
+	[0x00] = "info",
 	[0x01] = "ain",
 	[0x02] = "aut",
 	[0x03] = "",

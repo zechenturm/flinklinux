@@ -33,7 +33,7 @@
 
 #include "flink.h"
 
-#define DBG
+//#define DBG
 #define MODULE_NAME THIS_MODULE->name
 #define SYSFS_CLASS_NAME "flink"
 #define MAX_DEV_NAME_LENGTH 15
@@ -551,7 +551,7 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 				#endif
 			}
 
-			// Increment Address counter and reset temp variables
+			// Increment address counter and reset temp variables
 			current_address += current_mem_size;
 			current_function = 0;
 			current_mem_size = 0;

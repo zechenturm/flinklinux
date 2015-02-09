@@ -203,27 +203,9 @@ static struct spi_driver flink_spi_driver = {
 	.remove = __devexit_p(flink_spi_remove),
 };
 
-static struct spi_board_info flinkInfo = {
-		.modalias = "flink_spi",
-		.max_speed_hz = 2000000,
-		.mode = SPI_MODE_1
-};
-
 // ############ Initialization and cleanup ############
 static int __init mod_init(void) {
 	int status;
-
-	// use these declarations for platform specific initialization
-	static const struct of_device_id mpc52xx_gpio_simple[] = {
-		{ .compatible = "fsl,mpc5200-gpio", },
-		{}
-	};
-	struct spi_master *master;
-	struct spi_device *dev;
-	struct mpc52xx_gpio __iomem *gpio;
-	struct device_node *np;
-	u32 portConfig;
-	u8 pscNum = 2;	// set to 1,2,3 or 6
 
 	#if defined(DBG)
 		printk(KERN_DEBUG "[%s] Registering flink driver\n", MODULE_NAME);
@@ -232,47 +214,6 @@ static int __init mod_init(void) {
 	if (status < 0) {
 		printk(KERN_ERR "[%s] Cannot register driver\n", MODULE_NAME);
 		goto exit;
-	}
-
-	// use in case a PSC serves as SPI
-	// set port configuration register of mpc5200
-	np = of_find_matching_node(NULL, mpc52xx_gpio_simple);
-	gpio = of_iomap(np, 0);
-	of_node_put(np);
-	if (!gpio) {
-		printk(KERN_ERR "%s() failed, expect abnormal behavior\n", __func__);
-		return -1;
-	}
-	portConfig = in_be32(&gpio->port_config);
-	#if defined(DBG)
-		printk(KERN_DEBUG "[%s] Current port config = 0x%x\n", MODULE_NAME, portConfig);
-	#endif
-	if (pscNum == 6) {
-		portConfig |=  0x00700060;	// PSC6 is Codec/SPI
-	} else if (pscNum >= 1 && pscNum <= 3) {
-		portConfig &= ~(7 << ((pscNum-1)*4));
-		portConfig |=  6 << ((pscNum-1)*4);
-	} else {
-		printk(KERN_ERR "[%s] Wrong PSC number\n", MODULE_NAME);
-		return -1;
-	}
-	out_be32(&gpio->port_config, portConfig);
-	#if defined(DBG)
-		printk(KERN_DEBUG "[%s] New port config = 0x%x\n", MODULE_NAME, portConfig);
-	#endif
-	iounmap(gpio);
-
-	// if the flink device is not loaded yet through the device tree, do it manually
-	//master = spi_busnum_to_master(32766);
-	master = spi_busnum_to_master(pscNum);	// use bus number of master
-	if (!master) {
-		printk(KERN_ERR "[%s] No master for this bus number\n", MODULE_NAME);
-		goto exit;
-	}
-	dev = spi_new_device(master, &flinkInfo);
-	if (dev) { // dev is null when the same driver is unloaded and reloaded
-		dev->bits_per_word = 32;
-		spi_setup(dev);
 	}
 
 	// All done
@@ -286,7 +227,7 @@ static void __exit mod_exit(void) {
 	#if defined(DBG)
 		printk(KERN_DEBUG "[%s] Unregistering flink driver\n", MODULE_NAME);
 	#endif
-	spi_unregister_driver(&flink_spi_driver);	// macht das remove läuft
+	spi_unregister_driver(&flink_spi_driver);
 
 	printk(KERN_INFO "[%s] Module sucessfully unloaded\n", MODULE_NAME);
 }
