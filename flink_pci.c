@@ -31,7 +31,7 @@
 #include "flink.h"
 #include "flink_pci.h"
 
-#define DBG 1
+//#define DBG 1
 #define MODULE_NAME THIS_MODULE->name
 
 #define BAR_0 0

@@ -48,15 +48,16 @@ struct flink_bus_ops {
 #define MAX_NOF_SUBDEVICES 256
 /// @brief Describes a subdevice
 struct flink_subdevice {
-	struct list_head     list;			/// Linked list of all subdevices of a device
+	struct list_head     list;				/// Linked list of all subdevices of a device
 	struct flink_device* parent;			/// Pointer to device which this subdevice belongs
-	u8                   id;			/// Identifies a subdevice within a device
+	u8                   id;				/// Identifies a subdevice within a device
 	u16                  function_id;		/// Identifies the function of the subdevice
-	u8                   sub_function_id;		/// Identifies the subtype of the subdevice
-	u8                   function_version;		/// Version of the function
+	u8                   sub_function_id;	/// Identifies the subtype of the subdevice
+	u8                   function_version;	/// Version of the function
 	u32                  base_addr;			/// Base address (logical)
 	u32                  mem_size;			/// Address space size
 	u32                  nof_channels;		/// Number of channels
+	u32                  unique_id;			/// unique id for this subdevice
 };
 
 // ############ flink device ############
@@ -95,18 +96,20 @@ extern struct class*           flink_get_sysfs_class(void);
 extern int                     flink_select_subdevice(struct file* f, u8 subdevice, bool exclusive);
 
 // ############ Constants ############
+#define MAX_ADDRESS_SPACE 0x10000	/// Maximum address space for a flink device
 
 // Memory addresses and offsets
 #define MAIN_HEADER_SIZE		16	// byte
 #define SUB_HEADER_SIZE			16	// byte
-#define SUBDEV_TYPE_OFFSET		0x0000	// byte
+#define SUBDEV_FUNCTION_OFFSET	0x0000	// byte
 #define SUBDEV_SIZE_OFFSET		0x0004	// byte
 #define SUBDEV_NOFCHANNELS_OFFSET	0x0008	// byte
+#define SUBDEV_UNIQUE_ID_OFFSET		0x000C	// byte
 #define SUBDEV_STATUS_OFFSET		0x0010	// byte
 #define SUBDEV_CONFIG_OFFSET		0x0014	// byte
 
 // Types
-#define UNKNOWN_TYPE_ID				0x00
+#define INFO_FUNCTION_ID			0x00
 
 // ############ I/O Controls ############
 

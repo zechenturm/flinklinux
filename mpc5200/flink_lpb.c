@@ -39,11 +39,11 @@
 
 #include "../flink.h"
 
-#define DEBUG
+//#define DEBUG
 #define MODULE_NAME THIS_MODULE->name
 
 // ############ Module Parameters ############
-static unsigned int dev_mem_length = 0x40;
+static unsigned int dev_mem_length = MAX_ADDRESS_SPACE;
 module_param(dev_mem_length, uint, 0444);
 MODULE_PARM_DESC(dev_mem_length, "device memory length");
 

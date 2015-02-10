@@ -33,7 +33,7 @@
 
 #include "flink.h"
 
-#define DBG 0
+//#define DBG
 #define MODULE_NAME THIS_MODULE->name
 #define SYSFS_CLASS_NAME "flink"
 #define MAX_DEV_NAME_LENGTH 15
@@ -515,6 +515,7 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 	u32 last_address = current_address + fdev->bus_ops->address_space_size(fdev) - 1;
 	u32 current_function = 0;
 	u32 current_mem_size = 0;
+	u32 total_mem_size = 0;
 	struct flink_subdevice* new_subdev;
 	
 	#if defined(DBG)
@@ -523,7 +524,7 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 		printk(KERN_DEBUG "  -> Last valid address: 0x%x", last_address);
 	#endif
 	while(current_address < last_address && subdevice_counter < MAX_NOF_SUBDEVICES) {
-		current_function = (fdev->bus_ops->read32(fdev, current_address + SUBDEV_TYPE_OFFSET));
+		current_function = (fdev->bus_ops->read32(fdev, current_address + SUBDEV_FUNCTION_OFFSET));
 		current_mem_size = fdev->bus_ops->read32(fdev, current_address + SUBDEV_SIZE_OFFSET);
 		if(current_mem_size > MAIN_HEADER_SIZE + SUB_HEADER_SIZE) {
 			// Create and initialize new subdevice
@@ -535,12 +536,22 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 			new_subdev->base_addr = current_address;
 			new_subdev->mem_size = current_mem_size;
 			new_subdev->nof_channels = fdev->bus_ops->read32(fdev, current_address + SUBDEV_NOFCHANNELS_OFFSET);
+			new_subdev->unique_id = fdev->bus_ops->read32(fdev, current_address + SUBDEV_UNIQUE_ID_OFFSET);
 			
 			// Add subdevice to flink device
 			flink_subdevice_add(fdev, new_subdev);
 			subdevice_counter++;
 			
-			// Increment Address counter and reset temp variables
+			// if subdevice is info subdevice -> read memory length
+			if(new_subdev->function_id == INFO_FUNCTION_ID) {
+				total_mem_size = fdev->bus_ops->read32(fdev, current_address + MAIN_HEADER_SIZE + SUB_HEADER_SIZE);
+				last_address = total_mem_size - 1;
+				#if defined(DBG)
+					printk(KERN_DEBUG "[%s] Info subdevice found: total memory length=0x%x", MODULE_NAME, total_mem_size);
+				#endif
+			}
+
+			// Increment address counter and reset temp variables
 			current_address += current_mem_size;
 			current_function = 0;
 			current_mem_size = 0;
@@ -770,6 +781,7 @@ int flink_subdevice_add(struct flink_device* fdev, struct flink_subdevice* fsubd
 			printk(KERN_DEBUG "  -> Base address: 0x%x", fsubdev->base_addr);
 			printk(KERN_DEBUG "  -> Size:         0x%x (%u bytes)", fsubdev->mem_size, fsubdev->mem_size);
 			printk(KERN_DEBUG "  -> Nof Channels: %u", fsubdev->nof_channels);
+			printk(KERN_DEBUG "  -> Unique id: 0x%x", fsubdev->unique_id);
 		#endif
 		
 		// Register subdevice at interface module
