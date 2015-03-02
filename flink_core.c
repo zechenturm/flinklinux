@@ -223,6 +223,9 @@ long flink_ioctl(struct file* f, unsigned int cmd, unsigned long arg) {
 	struct flink_subdevice* src;
 	u8 id;
 	struct ioctl_bit_container_t rwbit_container;
+	struct ioctl_container_t rw_container;
+	unsigned long rsize = 0;
+	unsigned long wsize = 0;
 	u32 temp;
 	
 	#if defined(DBG)
@@ -432,6 +435,166 @@ long flink_ioctl(struct file* f, unsigned int cmd, unsigned long arg) {
 				#endif
 			}
 			pdata->fdev->bus_ops->write32(pdata->fdev, src->base_addr + rwbit_container.offset, temp);
+			break;
+		case SELECT_AND_READ:
+			#if defined(DBG)
+				printk(KERN_DEBUG "  -> SELECT_AND_READ (0x%x)", SELECT_AND_READ);
+			#endif
+			error = copy_from_user(&rw_container, (void __user *)arg, sizeof(rw_container));
+			if(error != 0) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Error while copying from userspace: %i", error);
+				#endif
+				return -EINVAL;
+			}
+			if (rw_container.data == NULL) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> NULL pointer");
+				#endif
+				return -EINVAL;
+			}
+			src = flink_get_subdevice_by_id(pdata->fdev, rw_container.subdevice);
+			if(src == NULL) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Getting kernel subdevice structure failed.");
+				#endif
+				return -EINVAL;
+			}
+			if (rw_container.offset > src->mem_size) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> offset > mem_size");
+				#endif
+				return -EINVAL;
+			}
+			switch(rw_container.size) {
+				case 1: {
+					u8 rdata = 0;
+					rdata = pdata->fdev->bus_ops->read8(pdata->fdev, src->base_addr + rw_container.offset);
+					rsize = copy_to_user((void __user *)rw_container.data, &rdata, sizeof(rdata));
+					if(rsize > 0) {
+						#if defined(DBG)
+							printk(KERN_DEBUG "  -> Copying to user space failed: %lu bytes not copied!", rsize);
+						#endif
+						return 0;
+					}
+					#if defined(DBG)
+						printk(KERN_DEBUG "  -> Value:  0x%x", rdata);
+					#endif
+					return sizeof(rdata);
+				}
+				case 2: {
+					u16 rdata = 0;
+					rdata = pdata->fdev->bus_ops->read16(pdata->fdev, src->base_addr + rw_container.offset);
+					rsize = copy_to_user((void __user *)rw_container.data, &rdata, sizeof(rdata));
+					if(rsize > 0) {
+						#if defined(DBG)
+							printk(KERN_DEBUG "  -> Copying to user space failed: %lu bytes not copied!", rsize);
+						#endif
+						return 0;
+					}
+					#if defined(DBG)
+						printk(KERN_DEBUG "  -> Value:  0x%x", rdata);
+					#endif
+					return sizeof(rdata);
+				}
+				case 4: {
+					u32 rdata = 0;
+					rdata = pdata->fdev->bus_ops->read32(pdata->fdev, src->base_addr + rw_container.offset);
+					rsize = copy_to_user((void __user *)rw_container.data, &rdata, sizeof(rdata));
+					if(rsize > 0) {
+						#if defined(DBG)
+							printk(KERN_DEBUG "  -> Copying to user space failed: %lu bytes not copied!", rsize);
+						#endif
+						return 0;
+					}
+					#if defined(DBG)
+						printk(KERN_DEBUG "  -> Value:  0x%x", rdata);
+					#endif
+					return sizeof(rdata);
+				}
+				default:
+					return -EINVAL;
+			}
+			break;
+		case SELECT_AND_WRITE:
+			#if defined(DBG)
+				printk(KERN_DEBUG "  -> SELECT_AND_WRITE (0x%x)", SELECT_AND_WRITE);
+			#endif
+			error = copy_from_user(&rw_container, (void __user *)arg, sizeof(rw_container));
+			if(error != 0) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Error while copying from userspace: %i", error);
+				#endif
+				return -EINVAL;
+			}
+			if (rw_container.data == NULL) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> NULL pointer");
+				#endif
+				return -EINVAL;
+			}
+			src = flink_get_subdevice_by_id(pdata->fdev, rw_container.subdevice);
+			if(src == NULL) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Getting kernel subdevice structure failed.");
+				#endif
+				return -EINVAL;
+			}
+			if (rw_container.offset > src->mem_size) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> offset > mem_size");
+				#endif
+				return -EINVAL;
+			}
+			switch(rw_container.size) {
+				case 1: {
+					u8 wdata = 0;
+					wsize = copy_from_user(&wdata, (void __user *)rw_container.data, sizeof(wdata));
+					if(wsize > 0) {
+						#if defined(DBG)
+							printk(KERN_DEBUG "  -> Copying from user space failed: %lu bytes not copied!", wsize);
+						#endif
+						return -EINVAL;
+					}
+					pdata->fdev->bus_ops->write8(pdata->fdev, src->base_addr + rw_container.offset, wdata);
+					#if defined(DBG)
+						printk(KERN_DEBUG "  -> Value:  0x%x", wdata);
+					#endif
+					return sizeof(wdata);
+				}
+				case 2: {
+					u16 wdata = 0;
+					wsize = copy_from_user(&wdata, (void __user *)rw_container.data, sizeof(wdata));
+					if(wsize > 0) {
+						#if defined(DBG)
+							printk(KERN_DEBUG "  -> Copying from user space failed: %lu bytes not copied!", wsize);
+						#endif
+						return -EINVAL;
+					}
+					pdata->fdev->bus_ops->write16(pdata->fdev, src->base_addr + rw_container.offset, wdata);
+					#if defined(DBG)
+						printk(KERN_DEBUG "  -> Value:  0x%x", wdata);
+					#endif
+					return sizeof(wdata);
+				}
+				case 4: {
+					u32 wdata = 0;
+					wsize = copy_from_user(&wdata, (void __user *)rw_container.data, sizeof(wdata));
+					if(wsize > 0) {
+						#if defined(DBG)
+							printk(KERN_DEBUG "  -> Copying from user space failed: %lu bytes not copied!", wsize);
+						#endif
+						return -EINVAL;
+					}
+					pdata->fdev->bus_ops->write32(pdata->fdev, src->base_addr + rw_container.offset, wdata);
+					#if defined(DBG)
+						printk(KERN_DEBUG "  -> Value:  0x%x", wdata);
+					#endif
+					return sizeof(wdata);
+				}
+				default:
+					return -EINVAL;
+			}
 			break;
 		default:
 			#if defined(DBG)

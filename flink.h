@@ -124,6 +124,8 @@ extern int                     flink_select_subdevice(struct file* f, u8 subdevi
 #define WRITE_SINGLE_BIT			0x31
 #define SELECT_AND_READ_BIT			0x40
 #define SELECT_AND_WRITE_BIT		0x41
+#define SELECT_AND_READ				0x42
+#define SELECT_AND_WRITE			0x43
 
 // Userland types and sizes
 /// @brief Structure containing information for ioctl system calls accessing single bits
@@ -132,6 +134,15 @@ struct ioctl_bit_container_t {
 	uint8_t  bit;		
 	uint8_t  value;		
 	uint8_t  subdevice;
+};
+
+// Userland types and sizes
+/// @brief Structure containing information for ioctl system calls
+struct ioctl_container_t {
+	uint8_t  subdevice;
+	uint32_t offset;
+	uint8_t  size;
+	void*    data;
 };
 
 // size of struct 'flink_subdevice' without linked list information (in bytes)
