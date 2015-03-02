@@ -358,6 +358,81 @@ long flink_ioctl(struct file* f, unsigned int cmd, unsigned long arg) {
 			}
 			pdata->fdev->bus_ops->write32(pdata->fdev, pdata->current_subdevice->base_addr + rwbit_container.offset, temp);
 			break;
+		case SELECT_AND_READ_BIT:
+			#if defined(DBG)
+				printk(KERN_DEBUG "  -> SELECT_AND_READ_BIT (0x%x)", SELECT_AND_READ_BIT);
+			#endif
+			error = copy_from_user(&rwbit_container, (void __user *)arg, sizeof(rwbit_container));
+			if(error != 0) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Error while copying from userspace: %i", error);
+				#endif
+				return -EINVAL;
+			}
+			src = flink_get_subdevice_by_id(pdata->fdev, rwbit_container.subdevice);
+			if(src == NULL) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Getting kernel subdevice structure failed.");
+				#endif
+				return -EINVAL;
+			}
+			temp = pdata->fdev->bus_ops->read32(pdata->fdev, src->base_addr + rwbit_container.offset);
+			#if defined(DBG)
+				printk(KERN_DEBUG "  -> Read from device: 0x%x", temp);
+			#endif
+			rwbit_container.value = ((temp & (1 << rwbit_container.bit)) != 0);
+			#if defined(DBG)
+				printk(KERN_DEBUG "  -> Bit value: 0x%x", rwbit_container.value);
+			#endif
+			error = copy_to_user((void __user *)arg, &rwbit_container, sizeof(rwbit_container));
+			if(error != 0) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Error while copying to userspace: %i", error);
+				#endif
+				return -EINVAL;
+			}
+			break;
+		case SELECT_AND_WRITE_BIT:
+			#if defined(DBG)
+				printk(KERN_DEBUG "  -> SELECT_AND_WRITE_BIT (0x%x)", SELECT_AND_WRITE_BIT);
+			#endif
+			error = copy_from_user(&rwbit_container, (void __user *)arg, sizeof(rwbit_container));
+			if(error != 0) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Error while copying from userspace: %i", error);
+				#endif
+				return -EINVAL;
+			}
+			else {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Copied from user space: offset = 0x%x, bit = %u, value = %u", rwbit_container.offset, rwbit_container.bit, rwbit_container.value);
+				#endif
+			}
+			src = flink_get_subdevice_by_id(pdata->fdev, rwbit_container.subdevice);
+			if(src == NULL) {
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Getting kernel subdevice structure failed.");
+				#endif
+				return -EINVAL;
+			}
+			temp = pdata->fdev->bus_ops->read32(pdata->fdev, src->base_addr + rwbit_container.offset);
+			#if defined(DBG)
+				printk(KERN_DEBUG "  -> Read from device: 0x%x", temp);
+			#endif
+			if(rwbit_container.value != 0) { // set bit
+				temp |= (1 << rwbit_container.bit);
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Setting bit by writing 0x%x to device", temp);
+				#endif
+			}
+			else { // clear bit
+				temp &= ~(1 << rwbit_container.bit);
+				#if defined(DBG)
+					printk(KERN_DEBUG "  -> Clearing bit by writing 0x%x to device", temp);
+				#endif
+			}
+			pdata->fdev->bus_ops->write32(pdata->fdev, src->base_addr + rwbit_container.offset, temp);
+			break;
 		default:
 			#if defined(DBG)
 				printk(KERN_DEBUG "  -> Error: illegal ioctl command: 0x%x!", cmd);
