@@ -14,7 +14,9 @@ endif
 modules:
 	$(CHROOT_CMD) $(MAKE) -C $(KERNELDIR) M=$(PWD) modules
 clean:
-	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions modules.order Module.symvers mpc5200/*.ko mpc5200/*.mod.c mpc5200/*.o
+	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions modules.order Module.symvers
+	rm -rf mpc5200/*.ko mpc5200/*.mod.c mpc5200/*.o
+	rm -rf imx6/*.ko imx6/*.mod.c imx6/*.o
 
 .PHONY: modules clean
 
@@ -32,5 +34,10 @@ ifeq ($(CONFIG_PPC_MPC5200_SIMPLE),y)
 	endif
 	obj-m += mpc5200/flink_lpb.o
 endif
+
+ifneq ($(CONFIG_IMX_WEIM),)
+	obj-m += imx6/flink_eim.o
+endif
+
 	flink-objs := flink_core.o
 endif
