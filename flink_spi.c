@@ -26,7 +26,6 @@
 #include <linux/spi/spi.h>
 #include <linux/delay.h>
 #include <asm/uaccess.h>
-#include <asm/mpc52xx.h>
 
 #include "flink.h"
 
@@ -133,7 +132,7 @@ struct flink_bus_ops spi_bus_ops = {
 };
 
 // ############ Driver probe and release functions ############
-static int __devinit flink_spi_probe(struct spi_device *spi) {
+static int __init flink_spi_probe(struct spi_device *spi) {
 	struct flink_device* fdev;
 	struct spi_data* spiData;
 
@@ -165,7 +164,7 @@ static int __devinit flink_spi_probe(struct spi_device *spi) {
 	return 0;
 }
 
-static int __devexit flink_spi_remove(struct spi_device *spi) {
+static int __exit flink_spi_remove(struct spi_device *spi) {
 	struct spi_data* spiData = spi_get_drvdata(spi);
 	struct flink_device* fdev;
 	struct flink_device* fdev_next;
@@ -200,7 +199,7 @@ static struct spi_driver flink_spi_driver = {
 		.owner = THIS_MODULE,
 	},
 	.probe = flink_spi_probe,
-	.remove = __devexit_p(flink_spi_remove),
+	.remove = __exit_p(flink_spi_remove),
 };
 
 // ############ Initialization and cleanup ############
