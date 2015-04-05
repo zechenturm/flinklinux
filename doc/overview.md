@@ -35,7 +35,7 @@ A flink device will contain one or several subdevices. Those subdevices are repr
     };
 
 The following picture shows an example of a system with two flink devices, each containing two subdevices.
-<img src="../doc/images/ExampleDataStructures.png" width="600px" />
+![](https://github.com/flink-project/flinklinux/blob/master/doc/images/ExampleDataStructures.png)
 
 Obviously, a flink device must communicate with a given set of operations over its interface. However, we do not want to introduce any hardware dependency into `flink_core.c`. For this purpose we define a structure `flink_bus_ops`.
 
