@@ -152,7 +152,7 @@ static struct device_node* getNode(const char *compatible) {
 }
 
 // ############ Driver probe and release functions ############
-static int __devinit flink_probe(struct platform_device *ofdev) {
+static int flink_probe(struct platform_device *ofdev) {
 	int len;
 	struct device_node *devNode;
 	const u32 *propReg, *propRanges;
@@ -281,7 +281,7 @@ static int __devinit flink_probe(struct platform_device *ofdev) {
 	return 0;
 }
 
-static int __devexit driver_remove(struct platform_device *ofdev) {
+static int driver_remove(struct platform_device *ofdev) {
 	struct flink_device* fdev;
 	struct flink_device* fdev_next;
 	struct flink_lpb_data* lpb_data;
@@ -316,7 +316,7 @@ MODULE_DEVICE_TABLE(of, flink_device_ids);
 
 static struct platform_driver flink_lpb_driver = {
 	.probe = flink_probe,	// is called when registering device
-	.remove = __devexit_p(driver_remove),
+	.remove = driver_remove,
 	.driver = {
 		.name = "flink_lpb_device",
 		.owner = THIS_MODULE,

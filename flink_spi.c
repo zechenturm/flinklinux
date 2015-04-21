@@ -132,7 +132,7 @@ struct flink_bus_ops spi_bus_ops = {
 };
 
 // ############ Driver probe and release functions ############
-static int __init flink_spi_probe(struct spi_device *spi) {
+static int flink_spi_probe(struct spi_device *spi) {
 	struct flink_device* fdev;
 	struct spi_data* spiData;
 
@@ -164,7 +164,7 @@ static int __init flink_spi_probe(struct spi_device *spi) {
 	return 0;
 }
 
-static int __exit flink_spi_remove(struct spi_device *spi) {
+static int flink_spi_remove(struct spi_device *spi) {
 	struct spi_data* spiData = spi_get_drvdata(spi);
 	struct flink_device* fdev;
 	struct flink_device* fdev_next;
