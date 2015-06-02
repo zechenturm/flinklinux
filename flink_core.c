@@ -764,6 +764,11 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 	while(current_address < last_address && subdevice_counter < MAX_NOF_SUBDEVICES) {
 		current_function = (fdev->bus_ops->read32(fdev, current_address + SUBDEV_FUNCTION_OFFSET));
 		current_mem_size = fdev->bus_ops->read32(fdev, current_address + SUBDEV_SIZE_OFFSET);
+
+		#if defined(DBG)
+			printk(KERN_DEBUG "[%s] subdevice size: 0x%x (current address: 0x%x)\n", MODULE_NAME, current_mem_size, current_address);
+		#endif
+
 		if(current_mem_size > MAIN_HEADER_SIZE + SUB_HEADER_SIZE) {
 			// Create and initialize new subdevice
 			new_subdev = flink_subdevice_alloc();
@@ -795,6 +800,9 @@ static unsigned int scan_for_subdevices(struct flink_device* fdev) {
 			current_mem_size = 0;
 		}
 		else {
+			#if defined(DBG)
+				printk(KERN_ALERT "[%s] aborting\n", MODULE_NAME);
+			#endif
 			break;
 		}
 	}

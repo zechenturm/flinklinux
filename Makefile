@@ -21,6 +21,7 @@ clean:
 .PHONY: modules clean
 
 else
+#	EXTRA_CFLAGS += -DDEBUG
 	ccflags-y := -std=gnu99
 	obj-m := flink.o
 
