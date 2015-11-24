@@ -39,7 +39,7 @@ module_param(dev_mem_length, uint, 0444);
 MODULE_PARM_DESC(dev_mem_length, "device memory length");
 
 MODULE_AUTHOR("Urs Graf");
-MODULE_DESCRIPTION("fLink SPI module for mpc5200");
+MODULE_DESCRIPTION("fLink SPI module");
 MODULE_SUPPORTED_DEVICE("fLink SPI devices");
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_ALIAS("spi:flink_spi");
