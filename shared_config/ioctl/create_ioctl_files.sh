@@ -86,7 +86,7 @@ echo "/*******************************************************************
  *
  *  THIS FILE WAS CREATED AUTOMATICALLY
  *
- *  Createt with: flinklinux/shared_config/create_ioctl_files.sh
+ *  Createt with: flinklinux/shared_config/ioctl/create_ioctl_files.sh
  *
  *  This header file contains definitions for ioctl calls.
  *
@@ -134,7 +134,7 @@ echo "/*******************************************************************
  *
  *  THIS FILE WAS CREATED AUTOMATICALLY
  *
- *  Createt with: flinklinux/shared_config/create_ioctl_files.sh
+ *  Createt with: flinklinux/shared_config/ioctl/create_ioctl_files.sh
  *
  *  This header file contains definitions for ioctl calls.
  *
