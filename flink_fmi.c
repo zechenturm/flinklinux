@@ -1,4 +1,31 @@
-#include "flink.h"
+/*******************************************************************
+ *   _________     _____      _____    ____  _____    ___  ____    *
+ *  |_   ___  |  |_   _|     |_   _|  |_   \|_   _|  |_  ||_  _|   *
+ *    | |_  \_|    | |         | |      |   \ | |      | |_/ /     *
+ *    |  _|        | |   _     | |      | |\ \| |      |  __'.     *
+ *   _| |_        _| |__/ |   _| |_    _| |_\   |_    _| |  \ \_   *
+ *  |_____|      |________|  |_____|  |_____|\____|  |____||____|  *
+ *                                                                 *
+ *******************************************************************
+ *                                                                 *
+ *  fLink Linux, subdevice types 	 	                   *
+ *                                                                 *
+ *******************************************************************/
+
+/** @file flink_fmi.c
+ *  @brief flink linux, strings for subdevice functions.
+ *
+ *  This header file contains string definitions for subdevice function id's.
+ 
+ *  THIS FILE WAS CREATED AUTOMATICALLY
+ *
+ *  Createt with: flinklinux/shared_config/func_id/create_func_id_files.sh
+ *
+ *  @author Martin Züger
+ *  @author Marcel Gehrig
+ */
+ 
+ #include flink.h
 
 const char* fmit_lkm_lut[] = {
 	[0x00] = "Info",
@@ -15,7 +42,7 @@ const char* fmit_lkm_lut[] = {
 	[0x0B] = "reserved",
 	[0x0C] = "PWM",
 	[0x0D] = "PPWA",
-	[0x0E] = "unknown",	
+	[0x0E] = "unknown",
 	[0x0F] = "unknown",
 	[0x10] = "Watch dog",
 	[0x11] = "Sensor",
@@ -28,3 +55,4 @@ const char* fmit_lkm_lut[] = {
 	[0x18] = "unknown",
 	[0x19] = "unknown",
 };
+
