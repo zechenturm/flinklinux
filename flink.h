@@ -11,6 +11,7 @@
 #include <linux/spinlock_types.h>
 #include <linux/list.h>
 #include <linux/fs.h>
+#include "flink_ioctl.h"
 
 // ############ flink error numbers ############
 #define UNKOWN_ERROR -1
@@ -110,22 +111,6 @@ extern int                     flink_select_subdevice(struct file* f, u8 subdevi
 
 // Types
 #define INFO_FUNCTION_ID			0x00
-
-// ############ I/O Controls ############
-
-// IOCTL Commands
-#define SELECT_SUBDEVICE			0x10
-#define SELECT_SUBDEVICE_EXCL		0x11
-#define SELECT_SUBDEVICE 			0x10
-#define SELECT_SUBDEVICE_EXCL		0x11
-#define READ_NOF_SUBDEVICES			0x20
-#define READ_SUBDEVICE_INFO			0x21
-#define READ_SINGLE_BIT				0x30
-#define WRITE_SINGLE_BIT			0x31
-#define SELECT_AND_READ_BIT			0x40
-#define SELECT_AND_WRITE_BIT		0x41
-#define SELECT_AND_READ				0x42
-#define SELECT_AND_WRITE			0x43
 
 // Userland types and sizes
 /// @brief Structure containing information for ioctl system calls accessing single bits
