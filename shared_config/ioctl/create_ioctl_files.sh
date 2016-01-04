@@ -4,7 +4,7 @@
 filepath_ioctl_flinklib=./flinklib/include/flinkioctl_cmd.h
 
 # flinklinux
-filepath_ioctl_flinklinux=./flinklinux/flinkioctl.h
+filepath_ioctl_flinklinux=./flinklinux/flink_ioctl.h
 
 # definitions of the shared ioctl commands
 i=0;
