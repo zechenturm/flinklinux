@@ -27,32 +27,33 @@
  
  #include flink.h
 
+
 const char* fmit_lkm_lut[] = {
-	[0x00] "Info"
-	[0x01] "Analog input"
-	[0x02] "Analog output"
-	[0x03] "reserved"
-	[0x04] "reserved"
-	[0x05] "Digital I/O"
-	[0x06] "Counter"
-	[0x07] "Timer"
-	[0x08] "Memory"
-	[0x09] "reserved"
-	[0x0A] "reserved"
-	[0x0B] "reserved"
-	[0x0C] "PWM"
-	[0x0D] "PPWA"
-	[0x0E] "unknown"
-	[0x0F] "unknown"
-	[0x10] "Watch dog"
-	[0x11] "Sensor"
-	[0x12] "unknown"
-	[0x13] "unknown"
-	[0x14] "unknown"
-	[0x15] "unknown"
-	[0x16] "unknown"
-	[0x17] "unknown"
-	[0x18] "unknown"
-	[0x19] "unknown"
+	[0x00] = "Info",
+	[0x01] = "Analog input",
+	[0x02] = "Analog output",
+	[0x03] = "reserved",
+	[0x04] = "reserved",
+	[0x05] = "Digital I/O",
+	[0x06] = "Counter",
+	[0x07] = "Timer",
+	[0x08] = "Memory",
+	[0x09] = "reserved",
+	[0x0A] = "reserved",
+	[0x0B] = "reserved",
+	[0x0C] = "PWM",
+	[0x0D] = "PPWA",
+	[0x0E] = "unknown",	
+	[0x0F] = "unknown",
+	[0x10] = "Watch dog",
+	[0x11] = "Sensor",
+	[0x12] = "unknown",
+	[0x13] = "unknown",
+	[0x14] = "unknown",
+	[0x15] = "unknown",
+	[0x16] = "unknown",
+	[0x17] = "unknown",
+	[0x18] = "unknown",
+	[0x19] = "unknown",
 };
 
