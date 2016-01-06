@@ -4,21 +4,13 @@ SCRIPT=$(readlink -f $0)
 SCRIPT_DIR=$(dirname $SCRIPT)
 
 # flinklib
-filepath_ioctl_flinklib_dir=.
+filepath_ioctl_flinklib_dir=./include
 filepath_ioctl_flinklib=$filepath_ioctl_flinklib_dir/flinkioctl_cmd.h
 mkdir -p $filepath_ioctl_flinklib_dir
 
 # definitions of the shared ioctl commands
 source $SCRIPT_DIR/ioctl_definitions.sh
 
-
-# DEBUG
-: '
-for (( i=0; i < ${#names[@]}; i++)); do
-  echo ${names[i]}
-  echo ${hex[i]}
-done
-'
 
 
 # flinklib: flinkioctl_cmd.h
@@ -46,11 +38,11 @@ echo "/*******************************************************************
 /** @file flinkioctl_cmd.h
  *  @brief flink userspace library, ioctl comand definitions.
  *
- *  THIS FILE WAS CREATED AUTOMATICALLY
- *
- *  Createt with: flinklinux/shared_config/ioctl/create_ioctl_files.sh
- *
  *  This header file contains definitions for ioctl calls.
+ *
+ *  THIS FILE WAS CREATED AUTOMATICALLY - do not change
+ *
+ *  Created with: flinkinterface/ioctl/create_flinkioctl_cmd.h.sh
  *
  *  @author Marcel Gehrig
  */

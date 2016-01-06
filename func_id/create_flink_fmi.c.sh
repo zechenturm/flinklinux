@@ -3,19 +3,19 @@
 SCRIPT=$(readlink -f $0)
 SCRIPT_DIR=$(dirname $SCRIPT)
 
-# flinklib
-filepath_ioctl_flinklinux_dir=.
-filepath_ioctl_flinklinux=$filepath_ioctl_flinklinux_dir/flink_ioctl.h
-mkdir -p $filepath_ioctl_flinklinux_dir
+# flinklinux
+filepath_func_id_flinklinux_dir=.
+filepath_func_id_flinklinux=$filepath_func_id_flinklinux_dir/flink_fmi.c
+mkdir -p $filepath_func_id_flinklinux_dir
 
-# definitions of the shared ioctl commands
-source $SCRIPT_DIR/ioctl_definitions.sh
+# definitions of the func ids
+source $SCRIPT_DIR/func_id_definitions.sh
 
 
 
-# flinklinux: flink_ioctl.h
-# ########################
-filepath=$filepath_ioctl_flinklinux
+# flinklinux: flink_fmi.c
+# #######################
+filepath=$filepath_func_id_flinklinux
 
 # Empty the content of the file
 cp /dev/null $filepath
@@ -31,36 +31,38 @@ echo "/*******************************************************************
  *                                                                 *
  *******************************************************************
  *                                                                 *
- *  			ioctl definitions  	                   *
+ *  fLink Linux, subdevice types 	 	                   *
  *                                                                 *
  *******************************************************************/
 
-/** @file flink_ioctl.h
- *  @brief flinklinux, ioctl comand definitions.
+/** @file flink_fmi.c
+ *  @brief flinklinux, strings for subdevice functions.
  *
- *  This header file contains definitions for ioctl calls.
- *
+ *  This header file contains string definitions for subdevice function id's.
+ 
  *  THIS FILE WAS CREATED AUTOMATICALLY - do not change
  *
- *  Created with: flinkinterface/ioctl/create_flink_ioctl_h.sh
+ *  Created with: flinkinterface/func_id/create_func_id_files.sh
  *
+ *  @author Martin Züger
  *  @author Marcel Gehrig
  */
  
+ #include "flink.h"
 " >> $filepath
 
-# ioctl list
-typdef_enum_ioctl="// ############ I/O Controls ############\n
-\n
-// IOCTL Commands\n"
+# func_id list
+fmit_lkm_lut="const char* fmit_lkm_lut[] = {\n"
 
 for (( i=0; i < ${#names[@]}; i++)); do		# whole list
-   typdef_enum_ioctl="$typdef_enum_ioctl#define ${names[i]}\t\t\t 0x${hex[i]}\n"
+   fmit_lkm_lut="$fmit_lkm_lut\t[0x${hex[i]}] = \"${names[i]}\",\n"
 done
 
-echo -e $typdef_enum_ioctl >> $filepath	# write file
+fmit_lkm_lut="$fmit_lkm_lut};\n"
+
+echo -e $fmit_lkm_lut >> $filepath	# write file
 
 
 
-echo "$filepath_ioctl_flinklinux created"
+echo "$filepath created"
 exit 0
