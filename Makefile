@@ -12,16 +12,20 @@ endif
 
 	PWD := $(shell pwd)
 
-modules: flink_ioctl.h
+modules: flink_ioctl.h flink_fmi.c
 	$(CHROOT_CMD) $(MAKE) -C $(KERNELDIR) M=$(PWD) modules
 clean:
 	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions modules.order Module.symvers
 	rm -rf mpc5200/*.ko mpc5200/*.mod.c mpc5200/*.o
 	rm -rf imx6/*.ko imx6/*.mod.c imx6/*.o
 	rm -f flink_ioctl.h
+	rm -f flink_fmi.c
 
-flink_ioctl.h: flinkinterface/ioctl/create_flink_ioctl.h.sh
+flink_ioctl.h: flinkinterface/ioctl/create_flink_ioctl.h.sh flinkinterface/func_id/func_id_definitions.sh
 	flinkinterface/ioctl/create_flink_ioctl.h.sh
+	
+flink_fmi.c: flinkinterface/func_id/create_flink_fmi.c.sh flinkinterface/func_id/func_id_definitions.sh
+	flinkinterface/func_id/create_flink_fmi.c.sh
 
 .PHONY: modules clean
 
