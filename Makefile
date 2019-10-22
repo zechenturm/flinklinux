@@ -14,6 +14,10 @@ endif
 
 modules: flink_ioctl.h flink_fmi.c
 	$(CHROOT_CMD) $(MAKE) -C $(KERNELDIR) M=$(PWD) modules
+	
+modules_install:
+	$(CHROOT_CMD) $(MAKE) -C $(KERNELDIR) M=$(PWD) modules_install
+
 clean:
 	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions modules.order Module.symvers
 	rm -rf mpc5200/*.ko mpc5200/*.mod.c mpc5200/*.o
