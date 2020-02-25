@@ -848,6 +848,9 @@ void flink_device_init(struct flink_device* fdev, struct flink_bus_ops* bus_ops,
  * @return int: A negative error code is returned on failure.
  */
 int flink_device_add(struct flink_device* fdev) {
+	#if defined(DBG)
+	printk(KERN_DEBUG "[%s] flink_device_add called", MODULE_NAME);
+	#endif
 	static unsigned int dev_counter = 0;
 	unsigned int nof_subdevices = 0;
 	if(fdev != NULL) {
@@ -867,8 +870,10 @@ int flink_device_add(struct flink_device* fdev) {
 		// Create device node
 		create_device_node(fdev);
 		
+		printk(KERN_DEBUG "[%s] create device node finished", MODULE_NAME);
 		return fdev->id;
 	}
+	printk(KERN_DEBUG "[%s] fdev is NULL!", MODULE_NAME);
 	return UNKOWN_ERROR;
 }
 
