@@ -29,7 +29,7 @@
 
 #include "flink.h"
 
-//#define DBG
+#define DBG 1
 #define BUFSIZE 32
 #define MODULE_NAME THIS_MODULE->name
 
