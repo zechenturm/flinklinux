@@ -254,7 +254,7 @@ static u8 flink_eim_read8(struct flink_device* fdev, u32 addr)
 	struct flink_eim_bus_data* d = (struct flink_eim_bus_data*)fdev->bus_data;
 	if (d != NULL) {
 		u8 data = (u8)ioread32(d->base + addr);
-		printkd("read8 data: %x", data);
+		printkd("read8 data: 0x%x at address 0x%x", data, d->base + addr);
 		return data;
 	}
 	printkd("read8: bus data NULL");
@@ -266,7 +266,7 @@ static u16 flink_eim_read16(struct flink_device* fdev, u32 addr)
 	struct flink_eim_bus_data* d = (struct flink_eim_bus_data*)fdev->bus_data;
 	if (d != NULL) {
 		u16 data = (u16)ioread32(d->base + addr);
-		printkd("read16 data: %x", data);
+		printkd("read16 data: 0x%x at address 0x%x", data, d->base + addr);
 		return data;
 	}
 	printkd("read16: bus data NULL");
@@ -278,7 +278,7 @@ static u32 flink_eim_read32(struct flink_device* fdev, u32 addr)
 	struct flink_eim_bus_data* d = (struct flink_eim_bus_data*)fdev->bus_data;
 	if (d != NULL) {
 		u32 data = ioread32(d->base + addr);
-		printkd("read32 data: %x", data);
+		printkd("read16 data: 0x%x at address 0x%x", data, d->base + addr);
 		return data;
 	}
 	printkd("read32: bus data NULL");
