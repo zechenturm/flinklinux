@@ -314,7 +314,7 @@ static int flink_eim_write32(struct flink_device* fdev, u32 addr, u32 val)
 	struct flink_eim_bus_data* d = (struct flink_eim_bus_data*)fdev->bus_data;
 	if (d != NULL) {
 		iowrite32(val, d->base + addr);
-		printkd("write32: wrote %x", v);
+		printkd("write32: wrote %x", val);
 	}
 	printkd("write32: bus data NULL");
 	return 0;
