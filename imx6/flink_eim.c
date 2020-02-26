@@ -253,7 +253,9 @@ static u8 flink_eim_read8(struct flink_device* fdev, u32 addr)
 {
 	struct flink_eim_bus_data* d = (struct flink_eim_bus_data*)fdev->bus_data;
 	if (d != NULL) {
-		return (u8)ioread32(d->base + addr);
+		u8 data = (u8)ioread32(d->base + addr)
+		printkd("read8 data: %x", data);
+		return data;
 	}
 	printkd("read8: bus data NULL");
 	return 0;
@@ -263,7 +265,9 @@ static u16 flink_eim_read16(struct flink_device* fdev, u32 addr)
 {
 	struct flink_eim_bus_data* d = (struct flink_eim_bus_data*)fdev->bus_data;
 	if (d != NULL) {
-		return (u16)ioread32(d->base + addr);
+		u16 data = (u16)ioread32(d->base + addr)
+		printkd("read16 data: %x", data);
+		return data;
 	}
 	printkd("read16: bus data NULL");
 	return 0;
@@ -273,7 +277,9 @@ static u32 flink_eim_read32(struct flink_device* fdev, u32 addr)
 {
 	struct flink_eim_bus_data* d = (struct flink_eim_bus_data*)fdev->bus_data;
 	if (d != NULL) {
-		return ioread32(d->base + addr);
+		u32 data = ioread32(d->base + addr)
+		printkd("read32 data: %x", data);
+		return data;
 	}
 	printkd("read32: bus data NULL");
 	return 0;
@@ -285,6 +291,7 @@ static int flink_eim_write8(struct flink_device* fdev, u32 addr, u8 val)
 	if (d != NULL) {
 		u32 v = ((flink_eim_read32(fdev, addr) & 0xff000000) | val);
 		iowrite32(v, d->base + addr);
+		printkd("write8: wrote %x", v);
 	}
 	printkd("write8: bus data NULL");
 	return 0;
@@ -296,6 +303,7 @@ static int flink_eim_write16(struct flink_device* fdev, u32 addr, u16 val)
 	if (d != NULL) {
 		u32 v = ((flink_eim_read32(fdev, addr) & 0xffff0000) | val);
 		iowrite32(v, d->base + addr);
+		printkd("write16: wrote %x", v);
 	}
 	printkd("write16: bus data NULL");
 	return 0;
@@ -306,6 +314,7 @@ static int flink_eim_write32(struct flink_device* fdev, u32 addr, u32 val)
 	struct flink_eim_bus_data* d = (struct flink_eim_bus_data*)fdev->bus_data;
 	if (d != NULL) {
 		iowrite32(val, d->base + addr);
+		printkd("write32: wrote %x", v);
 	}
 	printkd("write32: bus data NULL");
 	return 0;
